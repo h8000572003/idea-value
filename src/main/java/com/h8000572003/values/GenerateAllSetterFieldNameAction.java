@@ -4,7 +4,6 @@ import com.intellij.codeInsight.intention.PsiElementBaseIntentionAction;
 import com.intellij.codeInspection.util.IntentionFamilyName;
 import com.intellij.codeInspection.util.IntentionName;
 import com.intellij.openapi.diagnostic.Logger;
-import com.intellij.openapi.editor.CaretModel;
 import com.intellij.openapi.editor.Document;
 import com.intellij.openapi.editor.Editor;
 import com.intellij.openapi.project.Project;
@@ -16,7 +15,7 @@ import org.jetbrains.annotations.NotNull;
 
 public class GenerateAllSetterFieldNameAction extends PsiElementBaseIntentionAction {
 
-    public static final String GENERATE_ALL_SETTERS = "Generate All Setters FieldName";
+    public static final String GENERATE_ALL_SETTERS = "Generate All Setters By FieldName";
     private static final Logger log = Logger.getInstance(GenerateAllSetterFieldNameAction.class);
 
     @Override

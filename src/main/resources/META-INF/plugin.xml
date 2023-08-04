@@ -29,7 +29,11 @@
             <className>com.h8000572003.values.GenerateAllSetterFieldNameAction</className>
         </intentionAction>
         <intentionAction>
-            <className>com.h8000572003.values.GenerateAllCompareAction</className>
+            <className>com.h8000572003.values.GenerateAssertAction</className>
+        </intentionAction>
+
+        <intentionAction>
+            <className>com.h8000572003.values.GenerateSourceMapperAction</className>
         </intentionAction>
     </extensions>
     <actions>
