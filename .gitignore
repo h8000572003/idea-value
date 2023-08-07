@@ -1,0 +1,15 @@
+.settings
+target
+.classpath
+.project
+*.log
+
+.run
+/values.iml
+/build/
+
+/.idea/
+/.gradle/
+/.run/
+/gradle/
+
