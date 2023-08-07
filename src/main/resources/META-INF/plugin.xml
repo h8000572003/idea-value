@@ -40,8 +40,5 @@
         </intentionAction>
     </extensions>
     <actions>
-<!--        <action id="MyActonId" class="com.h8000572003.values.MyActons" text="操作" description="描述操作">-->
-<!--            <add-to-group group-id="ShowIntentionsGroup" anchor="first"/>-->
-<!--        </action>-->
     </actions>
 </idea-plugin>
