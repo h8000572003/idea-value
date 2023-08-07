@@ -29,7 +29,7 @@
             <className>com.h8000572003.values.GenerateAllSetterFieldNameAction</className>
         </intentionAction>
         <intentionAction>
-            <className>com.h8000572003.values.GenerateAssertAction</className>
+            <className>com.h8000572003.values.GenerateUnionAssertAction</className>
         </intentionAction>
 
         <intentionAction>

@@ -14,31 +14,27 @@ import com.intellij.util.IncorrectOperationException;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.LinkedHashSet;
+import java.util.Objects;
 import java.util.Set;
 
-public class GenerateAssertAction extends PsiElementBaseIntentionAction {
+public class GenerateUnionAssertAction extends PsiElementBaseIntentionAction {
 
-    public static final String TITLE = "Generate source1 assertion sources2";
-    private static final Logger log = Logger.getInstance(GenerateAssertAction.class);
+    public static final String TITLE = "generate all  source1 assertion sources2";
+    private static final Logger log = Logger.getInstance(GenerateUnionAssertAction.class);
+    private PsiParameterList parameterList;
+    private PsiClass psiClass1;
 
     @Override
     public void invoke(@NotNull Project project, Editor editor, @NotNull PsiElement element) throws IncorrectOperationException {
-
-        PsiMethod psiMethod = PsiTreeUtil.getParentOfType(element, PsiMethod.class);
-
-        PsiParameterList parameterList = psiMethod.getParameterList();
+        Set<String> getMethods = getMethods(parameterList.getParameter(0), "get");
+        insertCode(editor, getMethods, parameterList.getParameter(0), parameterList.getParameter(1));
 
 
-        PsiParameter parameter = parameterList.getParameter(0);
-        Set<String> get = getMethods(parameter, "get");
+    }
 
-        PsiParameter parameter1 = parameterList.getParameter(1);
-        Set<String> get1 = getMethods(parameter1, "get");
-        Set<String> intersect = new LinkedHashSet<>(get);
-        intersect.retainAll(get1);
-
+    private static void insertCode(Editor editor, Set<String> get, PsiParameter parameter, PsiParameter parameter1) {
         StringBuilder insertText = new StringBuilder("\n");
-        for (String method : intersect) {
+        for (String method : get) {
             insertText.append("assertEquals(%s.%s(), %s.%s());\n".formatted(
                     parameter.getName(),
                     method,
@@ -48,8 +44,6 @@ public class GenerateAssertAction extends PsiElementBaseIntentionAction {
         }
         Document document = editor.getDocument();
         document.insertString(editor.getCaretModel().getOffset(), insertText.toString());
-
-
     }
 
     private static Set<String> getMethods(PsiParameter psiParameter, String startWith) {
@@ -69,15 +63,27 @@ public class GenerateAssertAction extends PsiElementBaseIntentionAction {
 
     @Override
     public boolean isAvailable(@NotNull Project project, Editor editor, @NotNull PsiElement element) {
-        PsiMethod psiMethod = PsiTreeUtil.getParentOfType(element, PsiMethod.class);
-        if (psiMethod == null) {
-            return false;
+        if (element instanceof PsiWhiteSpace) {
+            PsiMethod psiMethod = PsiTreeUtil.getParentOfType(element, PsiMethod.class);
+            if (psiMethod == null) {
+                return false;
+            }
+            this.parameterList = psiMethod.getParameterList();
+            if (parameterList.getParametersCount() == 2) {
+                this.psiClass1 = getClassTypeFromParameter(0, this.parameterList);
+                return this.psiClass1 != null;
+            }
         }
-        PsiParameterList parameterList = psiMethod.getParameterList();
-        if (parameterList.getParametersCount() != 2) {
-            return false;
+
+        return false;
+    }
+
+    private PsiClass getClassTypeFromParameter(int index, PsiParameterList parameterList) {
+        PsiParameter parameter1 = parameterList.getParameter(index);
+        if (parameter1 != null) {
+            return PsiTypesUtil.getPsiClass(parameter1.getType());
         }
-        return true;
+        return null;
     }
 
 

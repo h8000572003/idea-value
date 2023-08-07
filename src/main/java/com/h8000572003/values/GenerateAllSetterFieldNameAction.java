@@ -13,49 +13,58 @@ import com.intellij.psi.util.PsiTypesUtil;
 import com.intellij.util.IncorrectOperationException;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Collectors;
+
 public class GenerateAllSetterFieldNameAction extends PsiElementBaseIntentionAction {
 
-    public static final String GENERATE_ALL_SETTERS = "Generate All Setters By FieldName";
+    public static final String GENERATE_ALL_SETTERS = "generate all setters with name";
     private static final Logger log = Logger.getInstance(GenerateAllSetterFieldNameAction.class);
+    private List<PsiMethod> methods;
+    private PsiLocalVariable psiLocalVariable;
 
     @Override
     public void invoke(@NotNull Project project, Editor editor, @NotNull PsiElement element) throws IncorrectOperationException {
-        int textOffset = element.getTextOffset();
-        log.info("textOffset = " + textOffset);
-        StringBuilder insertText = new StringBuilder("\n");
-//        PsiVariable psiVariable = PsiTreeUtil.getParentOfType(element, PsiVariable.class);
-//        if (element instanceof PsiWhiteSpace) {
+        final StringBuilder insertText = new StringBuilder("\n");
+        this.methods.forEach(method -> appendCode(method, insertText));
+        insertText(editor, insertText);
 
-        PsiLocalVariable psiLocalVariable = PsiTreeUtil.getParentOfType(element, PsiLocalVariable.class);
+    }
 
-        PsiElement parent1 = psiLocalVariable.getParent();
-        PsiClass psiClass = PsiTypesUtil.getPsiClass(psiLocalVariable.getType());
-        if (psiClass != null) {
-            PsiMethod[] methods = psiClass.getMethods();
-            for (PsiMethod method : methods) {
-                boolean set = method.getName().startsWith("set");
-                if (set) {
-                    PsiParameter parameter1 = method.getParameterList().getParameter(0);
-                    String canonicalText = parameter1.getType().getCanonicalText();
-                    log.info("canonicalText = " + canonicalText);
-                    String name = psiLocalVariable.getName();
-                    String value = "\"" + method.getName().replace("set", "") + "\"";
-                    insertText.append("%s.%s(%s);\n".formatted(name, method.getName(), value));
-                }
+    private void appendCode(PsiMethod method, StringBuilder insertText) {
+        final String name = psiLocalVariable.getName();
+        final String value = "\"" + method.getName().replace("set", "") + "\"";
+        insertText.append("%s.%s(%s);\n".formatted(name, method.getName(), value));
+    }
 
-            }
-
-        }
-
-
-        Document document = editor.getDocument();
-        document.insertString(parent1.getTextOffset() + parent1.getText().length(), insertText.toString());
+    private void insertText(Editor editor, StringBuilder insertText) {
+        final Document document = editor.getDocument();
+        document.insertString(//
+                psiLocalVariable.getParent().getTextOffset() + psiLocalVariable.getParent().getText().length(),//
+                insertText.toString());//
     }
 
 
     @Override
     public boolean isAvailable(@NotNull Project project, Editor editor, @NotNull PsiElement element) {
-        return element instanceof PsiIdentifier;
+        this.methods = null;
+        this.psiLocalVariable = null;
+        if (element instanceof PsiIdentifier) {
+            this.psiLocalVariable = PsiTreeUtil.getParentOfType(element, PsiLocalVariable.class);
+            if (psiLocalVariable != null) {
+                PsiClass psiClass = PsiTypesUtil.getPsiClass(psiLocalVariable.getType());
+                if (psiClass != null) {
+                    this.methods = Arrays.stream(psiClass.getMethods())//
+                            .filter(m -> m.getName().startsWith("set"))//
+                            .collect(Collectors.toList());//
+                    return !this.methods.isEmpty();
+                }
+
+            }
+        }
+        return false;
+
     }
 
 

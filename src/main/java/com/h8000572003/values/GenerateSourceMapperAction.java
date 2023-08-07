@@ -11,38 +11,33 @@ import com.intellij.psi.*;
 import com.intellij.psi.util.PsiTreeUtil;
 import com.intellij.psi.util.PsiTypesUtil;
 import com.intellij.util.IncorrectOperationException;
+import org.apache.commons.lang.StringUtils;
 import org.jetbrains.annotations.NotNull;
 
+import java.text.MessageFormat;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
 public class GenerateSourceMapperAction extends PsiElementBaseIntentionAction {
 
-    public static final String TITLE = "Generate source1 mapper by sources2";
+    public static final String TITLE = "generate  source1 mapper by sources2";
     private static final Logger log = Logger.getInstance(GenerateSourceMapperAction.class);
+    private PsiParameterList parameterList;
+    private PsiClass psiClass1;
+
 
     @Override
     public void invoke(@NotNull Project project, Editor editor, @NotNull PsiElement element) throws IncorrectOperationException {
+        final Set<String> get1 = getMethods1("get", psiClass1);
 
-        PsiMethod psiMethod = PsiTreeUtil.getParentOfType(element, PsiMethod.class);
-
-        PsiParameterList parameterList = psiMethod.getParameterList();
-
-
-        PsiParameter parameter = parameterList.getParameter(0);
-        Set<String> get = getMethods(parameter, "get");
-
-        PsiParameter parameter1 = parameterList.getParameter(1);
-        Set<String> get1 = getMethods(parameter1, "get");
-        Set<String> intersect = new LinkedHashSet<>(get);
-        intersect.retainAll(get1);
-
-        StringBuilder insertText = new StringBuilder("");
-        for (String method : intersect) {
+        StringBuilder insertText = new StringBuilder(StringUtils.EMPTY);
+        String name = parameterList.getParameter(0).getName();
+        String name1 = parameterList.getParameter(1).getName();
+        for (String method : get1) {
             insertText.append("%s.%s(%s.%s());\n".formatted(
-                    parameter.getName(),
+                    name,
                     method.replaceFirst("get", "set"),
-                    parameter1.getName(),
+                    name1,
                     method
             ));
         }
@@ -52,14 +47,11 @@ public class GenerateSourceMapperAction extends PsiElementBaseIntentionAction {
 
     }
 
-    private static Set<String> getMethods(PsiParameter psiParameter, String startWith) {
-        PsiClass psiClass = PsiTypesUtil.getPsiClass(psiParameter.getType());
+    private static Set<String> getMethods1(String startWith, PsiClass psiClass) {
         Set<String> methodNames = new LinkedHashSet<>();
-        if (psiClass != null) {
-            for (PsiMethod method : psiClass.getMethods()) {
-                if (method.getName().startsWith(startWith)) {
-                    methodNames.add(method.getName());
-                }
+        for (PsiMethod method : psiClass.getMethods()) {
+            if (method.getName().startsWith(startWith)) {
+                methodNames.add(method.getName());
             }
         }
         return methodNames;
@@ -68,15 +60,28 @@ public class GenerateSourceMapperAction extends PsiElementBaseIntentionAction {
 
     @Override
     public boolean isAvailable(@NotNull Project project, Editor editor, @NotNull PsiElement element) {
-        PsiMethod psiMethod = PsiTreeUtil.getParentOfType(element, PsiMethod.class);
-        if (psiMethod == null) {
-            return false;
+        if (element instanceof PsiWhiteSpace) {
+            PsiMethod psiMethod = PsiTreeUtil.getParentOfType(element, PsiMethod.class);
+            if (psiMethod == null) {
+                return false;
+            }
+            this.parameterList = psiMethod.getParameterList();
+            if (parameterList.getParametersCount() == 2) {
+                this.psiClass1 = getClassTypeFromParameter(0, this.parameterList);
+                return this.psiClass1 != null;
+            }
         }
-        PsiParameterList parameterList = psiMethod.getParameterList();
-        if (parameterList.getParametersCount() != 2) {
-            return false;
+
+        return false;
+    }
+
+
+    private PsiClass getClassTypeFromParameter(int index, PsiParameterList parameterList) {
+        PsiParameter parameter1 = parameterList.getParameter(index);
+        if (parameter1 != null) {
+            return PsiTypesUtil.getPsiClass(parameter1.getType());
         }
-        return true;
+        return null;
     }
 
 
