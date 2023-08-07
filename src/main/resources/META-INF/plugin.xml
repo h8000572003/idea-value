@@ -14,9 +14,12 @@
          Simple HTML elements (text formatting, paragraphs, and lists) can be added inside of <![CDATA[ ]]> tag.
          Guidelines: https://plugins.jetbrains.com/docs/marketplace/plugin-overview-page.html#plugin-description -->
     <description><![CDATA[
-    Enter short description for your plugin here.<br>
-    <em>most HTML tags may be used</em>
-  ]]></description>
+    <p><a href="https://github.com/h8000572003/idea-value">GitHub</a>
+     </a></p>
+      <p>常用set value code generate</p>
+
+      <p> view more on <a href ="https://github.com/h8000572003/idea-value">https://github.com/h8000572003/idea-value</a></p>
+    ]]></description>
 
     <!-- Product and plugin compatibility requirements.
          Read more: https://plugins.jetbrains.com/docs/intellij/plugin-compatibility.html -->
@@ -37,8 +40,8 @@
         </intentionAction>
     </extensions>
     <actions>
-        <action id="MyActonId" class="com.h8000572003.values.MyActons" text="操作" description="描述操作">
-            <add-to-group group-id="ShowIntentionsGroup" anchor="first"/>
-        </action>
+<!--        <action id="MyActonId" class="com.h8000572003.values.MyActons" text="操作" description="描述操作">-->
+<!--            <add-to-group group-id="ShowIntentionsGroup" anchor="first"/>-->
+<!--        </action>-->
     </actions>
 </idea-plugin>
