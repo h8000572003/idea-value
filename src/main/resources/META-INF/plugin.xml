@@ -14,13 +14,28 @@
          Simple HTML elements (text formatting, paragraphs, and lists) can be added inside of <![CDATA[ ]]> tag.
          Guidelines: https://plugins.jetbrains.com/docs/marketplace/plugin-overview-page.html#plugin-description -->
     <description><![CDATA[
-    <p><a href="https://github.com/h8000572003/idea-value">GitHub</a>
-     </a></p>
-      <p>Two object assertions generate corresponding code:  in method block Enter ALT+ENTER ，Click [generate all  source1 assertion sources2]</p>
-      <p>Two object assertions generate mapper code:   in method block Enter ALT+ENTER ，Click [generate all  source1 assertion sources2]</p>
-      <p>object set value by name:select object Enter ALT+ENTER ，Click [generate all setters with name]</p>
-      <p> view more on <a href ="https://github.com/h8000572003/idea-value">https://github.com/h8000572003/idea-value</a></p>
+   <p><a href="https://github.com/h8000572003/idea-value">GitHub</a></p>
+<p>generic code for generating common values </p>
+<ul>
+    <li>Two object assertions generate corresponding code:  on method block body Enter ALT+ENTER ，Click [generate all  source1 assertion sources2]</li>
+</ul>
+<ul>
+    <li>Two object assertions generate mapper code: on method block body Enter ALT+ENTER ，Click [generate all  source1 assertion sources2]</li>
+</ul>
+<ul>
+    <li>object set value by name: on variable Enter ALT+ENTER ，on variable [generate all setters with name]</li>
+</ul>
     ]]></description>
+
+
+    <change-notes><![CDATA[
+        <strong>1.0</strong>
+        <ul>
+            <li>[NEW] 3 types generate code </li>
+        </ul>
+    ]]>
+    </change-notes>
+
 
     <!-- Product and plugin compatibility requirements.
          Read more: https://plugins.jetbrains.com/docs/intellij/plugin-compatibility.html -->
