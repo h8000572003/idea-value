@@ -1,7 +1,7 @@
 <!-- Plugin Configuration File. Read more: https://plugins.jetbrains.com/docs/intellij/plugin-configuration-file.html -->
 <idea-plugin>
     <!-- Unique identifier of the plugin. It should be FQN. It cannot be changed between the plugin versions. -->
-    <id>com.h8000572003.values</id>
+    <id>com.h8000572003.intellijplugin</id>
 
     <!-- Public plugin name should be written in Title Case.
          Guidelines: https://plugins.jetbrains.com/docs/marketplace/plugin-overview-page.html#plugin-name -->
@@ -28,13 +28,7 @@
     ]]></description>
 
 
-    <change-notes><![CDATA[
-        <strong>1.0</strong>
-        <ul>
-            <li>[NEW] 3 types generate code </li>
-        </ul>
-    ]]>
-    </change-notes>
+
 
 
     <!-- Product and plugin compatibility requirements.
