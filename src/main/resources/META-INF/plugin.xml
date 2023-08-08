@@ -16,8 +16,9 @@
     <description><![CDATA[
     <p><a href="https://github.com/h8000572003/idea-value">GitHub</a>
      </a></p>
-      <p>常用set value code generate</p>
-
+      <p>Two object assertions generate corresponding code:  in method block Enter ALT+ENTER ，Click [generate all  source1 assertion sources2]</p>
+      <p>Two object assertions generate mapper code:   in method block Enter ALT+ENTER ，Click [generate all  source1 assertion sources2]</p>
+      <p>object set value by name:select object Enter ALT+ENTER ，Click [generate all setters with name]</p>
       <p> view more on <a href ="https://github.com/h8000572003/idea-value">https://github.com/h8000572003/idea-value</a></p>
     ]]></description>
 
@@ -40,8 +41,6 @@
         </intentionAction>
     </extensions>
     <actions>
-<!--        <action id="MyActonId" class="com.h8000572003.values.MyActons" text="操作" description="描述操作">-->
-<!--            <add-to-group group-id="ShowIntentionsGroup" anchor="first"/>-->
-<!--        </action>-->
+
     </actions>
 </idea-plugin>
