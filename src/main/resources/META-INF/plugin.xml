@@ -23,8 +23,9 @@
     <li>Two object assertions generate mapper code: on method block body Enter ALT+ENTER ，Click [generate all  source1 assertion sources2]</li>
 </ul>
 <ul>
-    <li>object set value by name: on variable Enter ALT+ENTER ，on variable [generate all setters same name value]</li>
+    <li>object set value by name : on variable Enter ALT+ENTER ，on variable [generate all setters no cache values] or [generate all setters cache name values]</li>
 </ul>
+
     ]]></description>
 
 
@@ -47,6 +48,10 @@
 
         <intentionAction>
             <className>com.h8000572003.values.GenerateSourceMapperAction</className>
+        </intentionAction>
+
+        <intentionAction>
+            <className>com.h8000572003.values.GenerateAllSetterNoCacheNameAction</className>
         </intentionAction>
 
 

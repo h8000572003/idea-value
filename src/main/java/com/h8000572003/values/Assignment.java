@@ -11,41 +11,37 @@ import java.util.Map;
 
 public class Assignment {
     private Map<String, Function<PsiParameter, String>> canonicalMap = new HashMap<>();
-    private final static Function<PsiParameter, String> fileNameValue = s -> "\"" + s.getName().replace("set", "").toUpperCase() + "\"";
-    private final static Function<PsiParameter, String> unknow = s -> "";
+    private static final Function<PsiParameter, String> fileNameValue = s -> "\"" + s.getName().replace("set", "").toUpperCase() + "\"";
+    private static final Function<PsiParameter, String> unknown = s -> "";
 
-    private Long startValue = 0l;
-    private Map<String, Long> valuesMap = new HashMap<>();
-    private final Function<PsiParameter, String> values = s ->
-            valuesMap.compute(s.getName(), (s1, aLong) -> {
-                if (aLong == null) {
-                    return ++startValue;
-                }
-                return aLong;
-            }) + "";
 
-    public Assignment() {
+    public interface NumberValueStrategy {
+        String getValue(String name);
+    }
 
-        this.canonicalMap.put("int", values);
-        this.canonicalMap.put(Integer.class.getName(), values);
+
+    public Assignment(NumberValueStrategy valueStrategy) {
+
+        this.canonicalMap.put("int", i -> valueStrategy.getValue(i.getName()));
+        this.canonicalMap.put(Integer.class.getName(), i -> valueStrategy.getValue(i.getName()));
 
 
         this.canonicalMap.put(String.class.getName(), fileNameValue);
 
-        this.canonicalMap.put("short", s -> "(short)" + values.fun(s) + "");
-        this.canonicalMap.put(Short.class.getName(), s -> "(short)" + values.fun(s) + "");
+        this.canonicalMap.put("short", s -> "(short)" + valueStrategy.getValue(s.getName()) + "");
+        this.canonicalMap.put(Short.class.getName(), s -> "(short)" + valueStrategy.getValue(s.getName()) + "");
 
-        this.canonicalMap.put(BigDecimal.class.getName(), s -> "BigDecimal.valueOf(" + ++startValue + ")");
+        this.canonicalMap.put(BigDecimal.class.getName(), s -> "BigDecimal.valueOf(" + valueStrategy.getValue(s.getName()) + ")");
 
-        this.canonicalMap.put("long", values);
-        this.canonicalMap.put(Long.class.getName(), values);
+        this.canonicalMap.put("long", i -> valueStrategy.getValue(i.getName()) + "L");
+        this.canonicalMap.put(Long.class.getName(), i -> valueStrategy.getValue(i.getName()) + "L");
 
-        this.canonicalMap.put("float", values);
-        this.canonicalMap.put(Float.class.getName(), values);
+        this.canonicalMap.put("float", i -> valueStrategy.getValue(i.getName()) + "f");
+        this.canonicalMap.put(Float.class.getName(), i -> valueStrategy.getValue(i.getName()) + "f");
 
 
-        this.canonicalMap.put("double", values);
-        this.canonicalMap.put(Double.class.getName(), values);
+        this.canonicalMap.put("double", i -> valueStrategy.getValue(i.getName()) + "d");
+        this.canonicalMap.put(Double.class.getName(), i -> valueStrategy.getValue(i.getName()) + "d");
 
         this.canonicalMap.put("boolean", s -> "Boolean.TRUE");
         this.canonicalMap.put(Boolean.class.getName(), s -> "Boolean.TRUE");
@@ -57,6 +53,6 @@ public class Assignment {
     }
 
     public String getAssignment(String canonicalText, PsiParameter parameter) {
-        return canonicalMap.getOrDefault(canonicalText, unknow).fun(parameter);
+        return canonicalMap.getOrDefault(canonicalText, unknown).fun(parameter);
     }
 }
