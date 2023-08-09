@@ -17,25 +17,32 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import static java.util.stream.Collectors.toList;
+
 public class GenerateAllSetterFieldNameAction extends PsiElementBaseIntentionAction {
 
-    public static final String GENERATE_ALL_SETTERS = "generate all setters with name";
-    private static final Logger log = Logger.getInstance(GenerateAllSetterFieldNameAction.class);
+    public static final String GENERATE_ALL_SETTERS = "generate all setters default and name";
     private List<PsiMethod> methods;
     private PsiLocalVariable psiLocalVariable;
+
+    private Assignment assignment = new Assignment();
+
 
     @Override
     public void invoke(@NotNull Project project, Editor editor, @NotNull PsiElement element) throws IncorrectOperationException {
         final StringBuilder insertText = new StringBuilder("\n");
-        this.methods.forEach(method -> appendCode(method, insertText));
+        this.methods.forEach(method -> {
+            final String name = psiLocalVariable.getName();
+            PsiParameterList parameterList = method.getParameterList();
+            if (parameterList.getParametersCount() == 0) {
+                throw new GenerateException(name + "no parameters");
+            }
+            PsiType type = parameterList.getParameter(0).getType();
+            final String value = assignment.getAssignment(type.getCanonicalText(), parameterList.getParameter(0));
+            insertText.append("%s.%s(%s);\n".formatted(name, method.getName(), value));
+        });
         insertText(editor, insertText);
 
-    }
-
-    private void appendCode(PsiMethod method, StringBuilder insertText) {
-        final String name = psiLocalVariable.getName();
-        final String value = "\"" + method.getName().replace("set", "") + "\"";
-        insertText.append("%s.%s(%s);\n".formatted(name, method.getName(), value));
     }
 
     private void insertText(Editor editor, StringBuilder insertText) {
@@ -57,7 +64,7 @@ public class GenerateAllSetterFieldNameAction extends PsiElementBaseIntentionAct
                 if (psiClass != null) {
                     this.methods = Arrays.stream(psiClass.getMethods())//
                             .filter(m -> m.getName().startsWith("set"))//
-                            .collect(Collectors.toList());//
+                            .toList();
                     return !this.methods.isEmpty();
                 }
 
@@ -77,6 +84,5 @@ public class GenerateAllSetterFieldNameAction extends PsiElementBaseIntentionAct
     public @NotNull @IntentionFamilyName String getFamilyName() {
         return "";
     }
-
 
 }
