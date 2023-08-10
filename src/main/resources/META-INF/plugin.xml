@@ -28,7 +28,14 @@
 
     ]]></description>
 
+    <change-notes><![CDATA[
+        <strong>1.4</strong>
+        <ul>
+            <li>[FIX]boolean type generate mapper and assert </li>
+        </ul>
 
+    ]]>
+    </change-notes>
 
 
 

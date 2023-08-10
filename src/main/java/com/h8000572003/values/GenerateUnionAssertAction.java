@@ -3,7 +3,6 @@ package com.h8000572003.values;
 import com.intellij.codeInsight.intention.PsiElementBaseIntentionAction;
 import com.intellij.codeInspection.util.IntentionFamilyName;
 import com.intellij.codeInspection.util.IntentionName;
-import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.openapi.editor.Document;
 import com.intellij.openapi.editor.Editor;
 import com.intellij.openapi.project.Project;
@@ -20,13 +19,11 @@ import java.util.Set;
 public class GenerateUnionAssertAction extends PsiElementBaseIntentionAction {
 
     public static final String TITLE = "generate all  source1 assertion sources2";
-    private static final Logger log = Logger.getInstance(GenerateUnionAssertAction.class);
     private PsiParameterList parameterList;
-    private PsiClass psiClass1;
 
     @Override
     public void invoke(@NotNull Project project, Editor editor, @NotNull PsiElement element) throws IncorrectOperationException {
-        Set<String> getMethods = getMethods(parameterList.getParameter(0), "get");
+        Set<String> getMethods = getMethods(Objects.requireNonNull(parameterList.getParameter(0)), Contract.START_GET_OR_IS);
         insertCode(editor, getMethods, parameterList.getParameter(0), parameterList.getParameter(1));
 
 
@@ -51,7 +48,7 @@ public class GenerateUnionAssertAction extends PsiElementBaseIntentionAction {
         Set<String> methodNames = new LinkedHashSet<>();
         if (psiClass != null) {
             for (PsiMethod method : psiClass.getMethods()) {
-                if(method.getName().startsWith(startWith)){
+                if(method.getName().matches(startWith)){
                     methodNames.add(method.getName());
                 }
             }
@@ -70,8 +67,8 @@ public class GenerateUnionAssertAction extends PsiElementBaseIntentionAction {
             }
             this.parameterList = psiMethod.getParameterList();
             if (parameterList.getParametersCount() == 2) {
-                this.psiClass1 = getClassTypeFromParameter(0, this.parameterList);
-                return this.psiClass1 != null;
+                PsiClass psiClass1 = getClassTypeFromParameter(0, this.parameterList);
+                return psiClass1 != null;
             }
         }
 

@@ -1,5 +1,7 @@
 package com.h8000572003.values;
 
+import com.h8000572003.values.commons.Assignment;
+import com.h8000572003.values.exception.GenerateException;
 import com.intellij.codeInsight.intention.PsiElementBaseIntentionAction;
 import com.intellij.codeInspection.util.IntentionFamilyName;
 import com.intellij.codeInspection.util.IntentionName;
@@ -14,6 +16,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 
 public class BaseGenerateAllSetterFieldNameAction extends PsiElementBaseIntentionAction {
 
@@ -28,9 +31,6 @@ public class BaseGenerateAllSetterFieldNameAction extends PsiElementBaseIntentio
         this.assignment = new Assignment(numberValueStrategy);
     }
 
-
-
-
     public void invoke(@NotNull Project project, Editor editor, @NotNull PsiElement element) throws IncorrectOperationException {
         final StringBuilder insertText = new StringBuilder("\n");
         this.methods.forEach(method -> {
@@ -39,7 +39,7 @@ public class BaseGenerateAllSetterFieldNameAction extends PsiElementBaseIntentio
             if (parameterList.getParametersCount() == 0) {
                 throw new GenerateException(name + "no parameters");
             }
-            PsiType type = parameterList.getParameter(0).getType();
+            PsiType type = Objects.requireNonNull(parameterList.getParameter(0)).getType();
             final String value = this.assignment.getAssignment(type.getCanonicalText(), parameterList.getParameter(0));
             insertText.append("%s.%s(%s);\n".formatted(name, method.getName(), value));
         });
@@ -66,7 +66,7 @@ public class BaseGenerateAllSetterFieldNameAction extends PsiElementBaseIntentio
                 if (psiClass != null) {
                     PsiMethod[] methods1 = psiClass.getMethods();
                     this.methods = Arrays.stream(methods1)//
-                            .filter(m -> m.getName().startsWith("set"))//
+                            .filter(m -> m.getName().matches(Contract.START_SET))//
                             .toList();
                     return !this.methods.isEmpty();
                 }
