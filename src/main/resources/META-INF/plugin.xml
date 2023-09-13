@@ -25,7 +25,9 @@
 <ul>
     <li>object set value by name : on variable Enter ALT+ENTER ，on variable [generate all setters no cache values] or [generate all setters cache name values]</li>
 </ul>
-
+<ul>
+    <li>object generate fields by method names : on variable Enter ALT+ENTER ，on variable [Generate fields by method name] </li>
+</ul>
     ]]></description>
 
     <change-notes><![CDATA[
@@ -33,7 +35,10 @@
         <ul>
             <li>[FIX]boolean type generate mapper and assert </li>
         </ul>
-
+ <strong>1.5</strong>
+        <ul>
+            <li>[FEATHER]add Generate fields by method name </li>
+        </ul>
     ]]>
     </change-notes>
 
@@ -60,7 +65,9 @@
         <intentionAction>
             <className>com.h8000572003.values.GenerateAllSetterNoCacheNameAction</className>
         </intentionAction>
-
+        <intentionAction>
+            <className>com.h8000572003.values.GenerateAllByMethodAction</className>
+        </intentionAction>
 
     </extensions>
     <actions>

@@ -18,7 +18,7 @@ import java.util.Set;
 
 public class GenerateUnionAssertAction extends PsiElementBaseIntentionAction {
 
-    public static final String TITLE = "generate all  source1 assertion sources2";
+    public static final String TITLE = "Generate all source1 assertion sources2";
     private PsiParameterList parameterList;
 
     @Override

@@ -5,7 +5,7 @@ import com.h8000572003.values.commons.NotKeepValueStrategy;
 public class GenerateAllSetterNoCacheNameAction extends BaseGenerateAllSetterFieldNameAction {
 
     GenerateAllSetterNoCacheNameAction() {
-        super(new NotKeepValueStrategy(), "generate all setters no cache values");
+        super(new NotKeepValueStrategy(), "Generate all setters no cache values");
 
     }
 }
