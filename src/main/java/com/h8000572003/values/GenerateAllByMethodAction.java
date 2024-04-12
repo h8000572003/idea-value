@@ -15,16 +15,17 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 public class GenerateAllByMethodAction extends PsiElementBaseIntentionAction {
 
-    public static final String TEXT = "Generate fields by method name";
+    public static final String TEXT = "Generate fields by get/is method name";
     private final List<PsiMethod> methods = new ArrayList<>();
-
 
     private PsiElement element;
 
     GenerateAllByMethodAction() {
+
     }
 
     private String name;
@@ -34,7 +35,7 @@ public class GenerateAllByMethodAction extends PsiElementBaseIntentionAction {
         this.methods.forEach(method -> {
 
             PsiType returnType = method.getReturnType();
-            String canonicalText = getClassName(returnType);
+            String canonicalText = getClassName(Objects.requireNonNull(returnType));
             String uncapitalize = StringUtils.uncapitalize(method.getName().replace("get", "").replace("is", ""));
             insertText.append("private %s %s;\n".formatted(canonicalText, uncapitalize));
         });

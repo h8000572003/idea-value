@@ -17,10 +17,8 @@ import java.util.Objects;
 import java.util.Set;
 
 public class GenerateUnionAssertAction extends PsiElementBaseIntentionAction {
-
-    public static final String TITLE = "Generate all source1 assertion sources2";
+    public static final String TITLE = "Generated assert based on parameter 1 as parameter 2";
     private PsiParameterList parameterList;
-
     @Override
     public void invoke(@NotNull Project project, Editor editor, @NotNull PsiElement element) throws IncorrectOperationException {
         Set<String> getMethods = getMethods(Objects.requireNonNull(parameterList.getParameter(0)), Contract.START_GET_OR_IS);

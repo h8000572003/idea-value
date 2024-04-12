@@ -19,7 +19,7 @@ import java.util.Set;
 
 public class GenerateSourceMapperAction extends PsiElementBaseIntentionAction {
 
-    public static final String TITLE = "Generate  source1 mapper by sources2";
+    public static final String TITLE = "Generated set/get based on parameter 1 as parameter 2";
     private PsiParameterList parameterList;
     private PsiClass psiClass1;
 

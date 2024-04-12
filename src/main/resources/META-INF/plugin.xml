@@ -35,9 +35,18 @@
         <ul>
             <li>[FIX]boolean type generate mapper and assert </li>
         </ul>
- <strong>1.5</strong>
+        <strong>1.5</strong>
         <ul>
             <li>[FEATHER]add Generate fields by method name </li>
+        </ul>
+        <strong>1.6</strong>
+        <ul>
+            <li>[FEATHER]support 232 </li>
+        </ul>
+        <strong>1.7</strong>
+        <ul>
+            <li>[FEATHER]support 241 </li>
+            <li>[FEATHER]support 241 </li>
         </ul>
     ]]>
     </change-notes>
