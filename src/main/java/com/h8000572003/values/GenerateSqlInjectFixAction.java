@@ -26,22 +26,22 @@ public abstract class GenerateSqlInjectFixAction extends PsiElementBaseIntention
         final PsiElement parent = element.getParent();
         final PsiPolyadicExpression psiPolyadicExpression = PsiTreeUtil.getParentOfType(parent, PsiPolyadicExpression.class);
 
+        if (parent != null) {
+            int startOffsetInParent1 = parent.getStartOffsetInParent();
+            int textOffset = parent.getTextOffset();
+            editor.getDocument().insertString(textOffset - startOffsetInParent1, "//");
+        }
 
         //psiPolyadicExpression
         PsiElement parent1 = psiPolyadicExpression.getParent();
 
-        String declarationName = null;
-        if (parent1 instanceof PsiAssignmentExpression) {
-            declarationName = parent1.getFirstChild().getText();
-        } else if (parent1 instanceof PsiLocalVariable) {
-            declarationName = ((PsiLocalVariable) parent1).getName();
-
-        }
-        if (parent1 != null) {
-            int startOffsetInParent1 = parent1.getStartOffsetInParent();
-            int textOffset = parent1.getTextOffset();
-            editor.getDocument().insertString(textOffset - startOffsetInParent1 - 1, "//TODO remove this line use next line replace it .\n//");
-        }
+//        String declarationName = null;
+//        if (parent1 instanceof PsiAssignmentExpression) {
+//            declarationName = parent1.getFirstChild().getText();
+//        } else if (parent1 instanceof PsiLocalVariable) {
+//            declarationName = ((PsiLocalVariable) parent1).getName();
+//
+//        }
 
 
         PsiReferenceExpression assignRef = PsiTreeUtil.getParentOfType(parent1, PsiReferenceExpression.class);
@@ -56,10 +56,10 @@ public abstract class GenerateSqlInjectFixAction extends PsiElementBaseIntention
             if (assignRef != null) {
                 insertText.append(assignRef.getText());
             }
-            if (declarationName != null) {
-                insertText.append(declarationName);
-            }
-            insertText.append(" = " + newSql + ";\n");
+//            if (declarationName != null) {
+//                insertText.append(declarationName);
+//            }
+            insertText.append(newSql + ";\n");
 
             int currentOffset = editor.getCaretModel().getOffset();
             int currentLineNumber = editor.getDocument().getLineNumber(currentOffset);
