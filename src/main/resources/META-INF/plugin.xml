@@ -46,11 +46,13 @@
         <strong>1.7</strong>
         <ul>
             <li>[FEATHER]support 241 </li>
-            <li>[FEATHER]support 241 </li>
+        </ul>
+         <strong>1.8</strong>
+        <ul>
+            <li>[FEATHER]add sql inject generate some parameters </li>
         </ul>
     ]]>
     </change-notes>
-
 
 
     <!-- Product and plugin compatibility requirements.
@@ -76,6 +78,12 @@
         </intentionAction>
         <intentionAction>
             <className>com.h8000572003.values.GenerateAllByMethodAction</className>
+        </intentionAction>
+        <intentionAction>
+            <className>com.h8000572003.values.GenerateMapFromStringWithoutDeclareAction</className>
+        </intentionAction>
+        <intentionAction>
+            <className>com.h8000572003.values.GenerateMapFromStringWithDeclareAction</className>
         </intentionAction>
 
     </extensions>
