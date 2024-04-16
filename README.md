@@ -12,3 +12,6 @@
 - Generate all setters no cache values：物件根據名稱塞特定根據名稱，若數字類時，將隨機產生流水號且不重複資料
 - Generated set/get based on parameter 1 as parameter 2: 物件對應set value根據參數1對應參數2
 - Generated assert based on parameter 1 as parameter 2：產生物件之間assertion根據參數1對應參數2
+- Generate fix sql injection related  declare parameters 
+- Generate fix sql injection related  no declare parameters 
+- add setting 

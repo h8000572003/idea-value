@@ -62,6 +62,14 @@
     <!-- Extension points defined by the plugin.
          Read more: https://plugins.jetbrains.com/docs/intellij/plugin-extension-points.html -->
     <extensions defaultExtensionNs="com.intellij">
+        <applicationService
+                serviceImplementation="com.h8000572003.values.configurable.MyPluginSettings"></applicationService>
+        <applicationConfigurable
+                parentId="tools"
+                instance="com.h8000572003.values.configurable.ValueConfigurable"
+                id="com.h8000572003.values.configurable.ValueConfigurable"
+                displayName="Values Settings"/>
+
         <intentionAction>
             <className>com.h8000572003.values.GenerateAllSetterFieldNameAction</className>
         </intentionAction>

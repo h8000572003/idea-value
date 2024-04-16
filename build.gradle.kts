@@ -5,7 +5,7 @@ plugins {
 }
 
 group = "com.h8000572003.values"
-version = "1.8.1"
+version = "1.8.2"
 
 repositories {
     mavenCentral()
