@@ -17,6 +17,9 @@ import org.jetbrains.annotations.NotNull;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
+
 
 public abstract class GenerateSqlInjectFixAction extends PsiElementBaseIntentionAction {
     final boolean isSqlDeclare;
@@ -28,7 +31,7 @@ public abstract class GenerateSqlInjectFixAction extends PsiElementBaseIntention
 
         String getParameterValues(List<PsiReferenceExpression> refs, boolean isDeclare);
 
-        String getSql(List<PsiReferenceExpression> refs, String originalSql);
+        String getSql(List<PsiReferenceExpression> refs, String originalSql, PsiPolyadicExpression psiPolyadicExpression);
     }
 
 
@@ -40,18 +43,28 @@ public abstract class GenerateSqlInjectFixAction extends PsiElementBaseIntention
                 if (isSqlDeclare) {
                     insertText.append("Map<String, Object>" + MyPluginSettings.getInstance().getState().getParameterName() + " = new HashMap<>();\n");
                 }
-                for (PsiReferenceExpression ref : refs) {
-                    insertText.append(MyPluginSettings.getInstance().getState().getParameterName() + ".put(\"" + ref.getText() + "\", " + ref.getText() + ");\n");
+                Set<String> set = refs.stream().map(PsiReferenceExpression::getText).collect(Collectors.toSet());
+                for (String key : set) {
+                    insertText.append(MyPluginSettings.getInstance().getState().getParameterName() + ".put(\"" + key + "\", " + key + ");\n");
                 }
                 return insertText.toString();
             }
 
             @Override
-            public String getSql(List<PsiReferenceExpression> refs, String originalSql) {
-                for (PsiReferenceExpression ref : refs) {
-                    originalSql = StringUtils.replace(originalSql, ref.getText(), "\":" + ref.getText() + "\"");
+            public String getSql(List<PsiReferenceExpression> refs, String originalSql, PsiPolyadicExpression psiPolyadicExpression) {
+
+                PsiElement[] children = psiPolyadicExpression.getChildren();
+                String allSql = new String();
+                for (PsiElement operand : children) {
+                    String text = operand.getText();
+                    text = StringUtils.removeEnd(text, "'");
+                    text = StringUtils.removeStart(text, "'");
+                    if (operand instanceof PsiReferenceExpression) {
+                        text = StringUtils.replace(text, operand.getText(), "\":" + operand.getText() + "\"");
+                    }
+                    allSql += text;
                 }
-                return originalSql.replaceAll("'", "") + ";\n";
+                return allSql;
             }
         });
     }
@@ -71,11 +84,21 @@ public abstract class GenerateSqlInjectFixAction extends PsiElementBaseIntention
             }
 
             @Override
-            public String getSql(List<PsiReferenceExpression> refs, String originalSql) {
-                for (PsiReferenceExpression ref : refs) {
-                    originalSql = StringUtils.replace(originalSql, ref.getText(), "\"" + "?" + "\"");
+            public String getSql(List<PsiReferenceExpression> refs, String originalSql, PsiPolyadicExpression psiPolyadicExpression) {
+                PsiElement[] children = psiPolyadicExpression.getChildren();
+                String allSql = new String();
+                for (PsiElement operand : children) {
+                    String text = operand.getText();
+
+                    StringUtils.endsWith(text,"'\"");
+                    text = StringUtils.removeEnd(text, "'");
+                    text = StringUtils.removeStart(text, "'");
+                    if (operand instanceof PsiReferenceExpression) {
+                        text = StringUtils.replace(text, operand.getText(), "\"" + "?" + "\"");
+                    }
+                    allSql += text;
                 }
-                return originalSql.replaceAll("'", "") + ";\n";
+                return allSql;
             }
         });
     }
@@ -94,27 +117,30 @@ public abstract class GenerateSqlInjectFixAction extends PsiElementBaseIntention
     public void invoke(@NotNull Project project, Editor editor, @NotNull PsiElement element) throws IncorrectOperationException {
         final PsiElement parent = element.getParent();
         final PsiPolyadicExpression psiPolyadicExpression = PsiTreeUtil.getParentOfType(parent, PsiPolyadicExpression.class);
+
+
         this.useParametersTypeService = useParametersTypeServiceMap.get(MyPluginSettings.getInstance().getState().getFeatureEnabled());
+        int upperShift = 0;
         if (parent != null) {
             int startOffsetInParent1 = parent.getStartOffsetInParent();
             int textOffset = parent.getTextOffset();
-            editor.getDocument().insertString(textOffset - startOffsetInParent1, "//");
+            editor.getDocument().insertString(textOffset - startOffsetInParent1, "/*");
+            upperShift = textOffset - startOffsetInParent1 + psiPolyadicExpression.getTextLength() + 2;
+            editor.getDocument().insertString(upperShift, "*/");
         }
         final List<PsiReferenceExpression> refs = PsiTreeUtil.getChildrenOfTypeAsList(psiPolyadicExpression, PsiReferenceExpression.class);
         if (psiPolyadicExpression != null) {
 
-            int currentOffset = editor.getCaretModel().getOffset();
+            String text = psiPolyadicExpression.getText();
+            Document document = editor.getDocument();
+            String sql = this.useParametersTypeService.getSql(refs, text, psiPolyadicExpression);
+            document.insertString(upperShift + 2, "\n" + sql);
+
+            int currentOffset = upperShift + 2 + 1 + sql.length();
             int currentLineNumber = editor.getDocument().getLineNumber(currentOffset);
             int nextLineStartOffset = editor.getDocument().getLineEndOffset(currentLineNumber) + 1;
+            document.insertString(nextLineStartOffset, this.useParametersTypeService.getParameterValues(refs, isSqlDeclare));
 
-            final StringBuilder insertText = new StringBuilder(StringUtils.EMPTY);
-            String text = psiPolyadicExpression.getText();
-            insertText.append(this.useParametersTypeService.getSql(refs, text));
-            insertText.append(this.useParametersTypeService.getParameterValues(refs, isSqlDeclare));
-
-
-            Document document = editor.getDocument();
-            document.insertString(nextLineStartOffset, insertText.toString());
 
         }
 
