@@ -8,6 +8,7 @@ import com.intellij.openapi.editor.Document;
 import com.intellij.openapi.editor.Editor;
 import com.intellij.openapi.project.Project;
 import com.intellij.psi.PsiElement;
+import com.intellij.psi.PsiLiteralExpression;
 import com.intellij.psi.PsiPolyadicExpression;
 import com.intellij.psi.PsiReferenceExpression;
 import com.intellij.psi.util.PsiTreeUtil;
@@ -15,10 +16,7 @@ import com.intellij.util.IncorrectOperationException;
 import org.apache.commons.lang.StringUtils;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 
@@ -54,21 +52,63 @@ public abstract class GenerateSqlInjectFixAction extends PsiElementBaseIntention
             @Override
             public String getSql(List<PsiReferenceExpression> refs, String originalSql, PsiPolyadicExpression psiPolyadicExpression) {
 
-                PsiElement[] children = psiPolyadicExpression.getChildren();
-                String allSql = new String();
-                for (PsiElement operand : children) {
-                    String text = operand.getText();
-
-                    text = ApostropheUtils.replaceEnd(text);
-                    text = ApostropheUtils.replaceStart(text);
-                    if (operand instanceof PsiReferenceExpression) {
-                        text = StringUtils.replace(text, operand.getText(), "\":" + operand.getText() + "\"");
-                    }
-                    allSql += text;
-                }
-                return allSql;
+                return getNewString(psiPolyadicExpression, true);
             }
         });
+    }
+
+    private static @NotNull String getNewString(PsiPolyadicExpression psiPolyadicExpression, boolean useName) {
+        PsiElement[] children = psiPolyadicExpression.getChildren();
+        Set<Integer> refsValuedSet = new LinkedHashSet<>();
+        for (int i = 0; i < children.length; i++) {
+            PsiElement psiElement = children[i];
+            if (psiElement instanceof PsiReferenceExpression) {
+                int pre = searchValue(children, i, -1);
+                if (pre >= 0) {
+                    refsValuedSet.add(pre);
+                }
+                int next = searchValue(children, i, +1);
+                if (next >= 0) {
+                    refsValuedSet.add(next);
+                }
+            }
+        }
+
+        String allSql = new String();
+        for (int i = 0; i < children.length; i++) {
+            PsiElement operand = children[i];
+            String text = operand.getText();
+            if (refsValuedSet.contains(i)) {
+                text = ApostropheUtils.replaceAll(text);
+            }
+            if (useName) {
+                if (operand instanceof PsiReferenceExpression) {
+                    String replaceValue = ":" + operand.getText();
+                    text = StringUtils.replace(text, operand.getText(), "\"" + replaceValue + "\"");
+                }
+            } else {
+                if (operand instanceof PsiReferenceExpression) {
+                    String replaceValue = "?";
+                    text = StringUtils.replace(text, operand.getText(), "\"" + replaceValue + "\"");
+                }
+            }
+
+            allSql += text;
+        }
+        return allSql;
+    }
+
+    private static int searchValue(PsiElement[] children, int index, int shift) {
+        int newIndex = index + shift;
+        if (newIndex >= 0) {
+            if (children[newIndex] instanceof PsiLiteralExpression) {
+                return newIndex;
+            } else {
+                return searchValue(children, newIndex, shift);
+            }
+        }
+
+        return -1;
     }
 
     private void addOrder() {
@@ -87,18 +127,7 @@ public abstract class GenerateSqlInjectFixAction extends PsiElementBaseIntention
 
             @Override
             public String getSql(List<PsiReferenceExpression> refs, String originalSql, PsiPolyadicExpression psiPolyadicExpression) {
-                PsiElement[] children = psiPolyadicExpression.getChildren();
-                String allSql = new String();
-                for (PsiElement operand : children) {
-                    String text = operand.getText();
-                    text = ApostropheUtils.replaceEnd(text);
-                    text = ApostropheUtils.replaceStart(text);
-                    if (operand instanceof PsiReferenceExpression) {
-                        text = StringUtils.replace(text, operand.getText(), "\"" + "?" + "\"");
-                    }
-                    allSql += text;
-                }
-                return allSql;
+                return getNewString(psiPolyadicExpression, false);
             }
         });
     }
