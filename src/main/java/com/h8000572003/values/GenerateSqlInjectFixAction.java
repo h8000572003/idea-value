@@ -1,5 +1,6 @@
 package com.h8000572003.values;
 
+import com.h8000572003.values.commons.ApostropheUtils;
 import com.h8000572003.values.configurable.MyPluginSettings;
 import com.h8000572003.values.configurable.ParameterType;
 import com.intellij.codeInsight.intention.PsiElementBaseIntentionAction;
@@ -57,8 +58,9 @@ public abstract class GenerateSqlInjectFixAction extends PsiElementBaseIntention
                 String allSql = new String();
                 for (PsiElement operand : children) {
                     String text = operand.getText();
-                    text = StringUtils.removeEnd(text, "'");
-                    text = StringUtils.removeStart(text, "'");
+
+                    text = ApostropheUtils.replaceEnd(text);
+                    text = ApostropheUtils.replaceStart(text);
                     if (operand instanceof PsiReferenceExpression) {
                         text = StringUtils.replace(text, operand.getText(), "\":" + operand.getText() + "\"");
                     }
@@ -89,10 +91,8 @@ public abstract class GenerateSqlInjectFixAction extends PsiElementBaseIntention
                 String allSql = new String();
                 for (PsiElement operand : children) {
                     String text = operand.getText();
-
-                    StringUtils.endsWith(text,"'\"");
-                    text = StringUtils.removeEnd(text, "'");
-                    text = StringUtils.removeStart(text, "'");
+                    text = ApostropheUtils.replaceEnd(text);
+                    text = ApostropheUtils.replaceStart(text);
                     if (operand instanceof PsiReferenceExpression) {
                         text = StringUtils.replace(text, operand.getText(), "\"" + "?" + "\"");
                     }
