@@ -15,4 +15,4 @@
 - Generate fix sql injection related  declare parameters 
 - Generate fix sql injection related  no declare parameters 
 - add setting ui 
-- 
+- add if condition not null check 

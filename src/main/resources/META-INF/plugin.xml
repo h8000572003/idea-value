@@ -51,6 +51,10 @@
         <ul>
             <li>[FEATHER]add sql inject generate some parameters </li>
         </ul>
+           <strong>1.8.6</strong>
+        <ul>
+            <li>[FEATHER]add if condition not null check  </li>
+        </ul>
     ]]>
     </change-notes>
 
@@ -93,7 +97,9 @@
         <intentionAction>
             <className>com.h8000572003.values.GenerateMapFromStringWithDeclareAction</className>
         </intentionAction>
-
+        <intentionAction>
+            <className>com.h8000572003.values.AddNullCheckAction</className>
+        </intentionAction>
     </extensions>
     <actions>
 

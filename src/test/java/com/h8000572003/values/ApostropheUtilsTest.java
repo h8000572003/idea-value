@@ -27,13 +27,20 @@ public class ApostropheUtilsTest {
         checkEnd("value=12345\"' ", "value=12345\" ");
         checkEnd("value=12345\"'%", "value=12345\"% ");
     }
+
     @org.junit.Test
     public void test3() {
         String x = replaceStartWithPercentage("='%\"");
         System.out.println(x);
     }
 
+    @org.junit.Test
+    public void test4() {
+        String value = null;
+        if ( value.isBlank()) {
 
+        }
+    }
 
 
     private static void checkEnd(String value11, String ans) {
