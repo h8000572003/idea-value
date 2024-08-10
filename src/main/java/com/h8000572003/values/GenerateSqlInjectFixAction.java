@@ -6,16 +6,15 @@ import com.h8000572003.values.configurable.ParameterType;
 import com.intellij.codeInsight.intention.PsiElementBaseIntentionAction;
 import com.intellij.openapi.editor.Document;
 import com.intellij.openapi.editor.Editor;
+import com.intellij.openapi.ide.CopyPasteManager;
 import com.intellij.openapi.project.Project;
-import com.intellij.psi.PsiElement;
-import com.intellij.psi.PsiLiteralExpression;
-import com.intellij.psi.PsiPolyadicExpression;
-import com.intellij.psi.PsiReferenceExpression;
+import com.intellij.psi.*;
 import com.intellij.psi.util.PsiTreeUtil;
 import com.intellij.util.IncorrectOperationException;
 import org.apache.commons.lang.StringUtils;
 import org.jetbrains.annotations.NotNull;
 
+import java.awt.datatransfer.StringSelection;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -149,28 +148,19 @@ public abstract class GenerateSqlInjectFixAction extends PsiElementBaseIntention
 
 
         this.useParametersTypeService = useParametersTypeServiceMap.get(MyPluginSettings.getInstance().getState().getFeatureEnabled());
-        int upperShift = 0;
-        if (parent != null) {
-            int startOffsetInParent1 = parent.getStartOffsetInParent();
-            int textOffset = parent.getTextOffset();
-            editor.getDocument().insertString(textOffset - startOffsetInParent1, "/*");
-            upperShift = textOffset - startOffsetInParent1 + psiPolyadicExpression.getTextLength() + 2;
-            editor.getDocument().insertString(upperShift, "*/");
-        }
+
         final List<PsiReferenceExpression> refs = PsiTreeUtil.getChildrenOfTypeAsList(psiPolyadicExpression, PsiReferenceExpression.class);
         if (psiPolyadicExpression != null) {
-
             String text = psiPolyadicExpression.getText();
-            Document document = editor.getDocument();
             String sql = this.useParametersTypeService.getSql(refs, text, psiPolyadicExpression);
-            document.insertString(upperShift + 2, "\n" + sql);
+            PsiElementFactory factory = JavaPsiFacade.getElementFactory(project);
 
-            int currentOffset = upperShift + 2 + 1 + sql.length();
-            int currentLineNumber = editor.getDocument().getLineNumber(currentOffset);
-            int nextLineStartOffset = editor.getDocument().getLineEndOffset(currentLineNumber) + 1;
-            document.insertString(nextLineStartOffset, this.useParametersTypeService.getParameterValues(refs, isSqlDeclare));
+            String parameterValues = this.useParametersTypeService.getParameterValues(refs, isSqlDeclare);
+            PsiExpression newExpression = factory.createExpressionFromText(sql  , null);
+            psiPolyadicExpression.replace(newExpression);
 
 
+            CopyPasteManager.getInstance().setContents(new StringSelection(parameterValues));
         }
 
 

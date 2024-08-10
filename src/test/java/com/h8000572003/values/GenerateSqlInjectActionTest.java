@@ -10,10 +10,16 @@ public class GenerateSqlInjectActionTest {
         vessel_reg_no = null;
         String car_no = null;
         String cont = null;
+
+
+
         String strSQL = " SELECT DISTINCT A.manif_no,A.goods_stat,A.amt,A.amt_unit,A.extr_cond," +
                 " FROM SC_CTGDS_STATUSD A, VW_SC_5204_MASTER B" +
                 " WHERE A.message_no='" + msg_no + "'" +
                 " AND A.decl_type = " + " '%" + decl_type + "' and A.message_no ='2'";
 
+
+        System.out.printf("");
     }
+
 }

@@ -14,4 +14,5 @@
 - Generated assert based on parameter 1 as parameter 2：產生物件之間assertion根據參數1對應參數2
 - Generate fix sql injection related  declare parameters 
 - Generate fix sql injection related  no declare parameters 
-- add setting 
+- add setting ui 
+- 
