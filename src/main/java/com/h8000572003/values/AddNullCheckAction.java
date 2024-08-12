@@ -22,17 +22,14 @@ public class AddNullCheckAction extends PsiElementBaseIntentionAction {
                 PsiMethodCallExpression methodCallExpression = (PsiMethodCallExpression) condition;
                 PsiReferenceExpression methodExpression = methodCallExpression.getMethodExpression();
 
-                // 获取方法调用者（即 "value"）
                 PsiExpression qualifierExpression = methodExpression.getQualifierExpression();
 
                 if (qualifierExpression != null && qualifierExpression.getText().equals(element.getText())) {
                     String newConditionText = qualifierExpression.getText() + " != null && " + condition.getText();
 
-                    // 创建新的条件表达式
                     PsiElementFactory factory = JavaPsiFacade.getElementFactory(project);
                     PsiExpression newCondition = factory.createExpressionFromText(newConditionText, null);
 
-                    // 替换旧的条件表达式
                     condition.replace(newCondition);
                 }
             }
