@@ -1,10 +1,10 @@
 package com.h8000572003.values.configurable;
 
+import com.intellij.openapi.application.ApplicationManager; // 新增
 import com.intellij.openapi.components.PersistentStateComponent;
-import com.intellij.openapi.components.ServiceManager;
 import com.intellij.openapi.components.State;
 import com.intellij.openapi.components.Storage;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -12,12 +12,13 @@ import org.jetbrains.annotations.Nullable;
         name = "MyPluginSettings",
         storages = {@Storage("MyPluginSettings.xml")}
 )
-public class MyPluginSettings implements PersistentStateComponent<MyPluginSettings.State> {
+// 建議加上 final
+public final class MyPluginSettings implements PersistentStateComponent<MyPluginSettings.State> {
 
     private State myState = new State();
 
     public static MyPluginSettings getInstance() {
-        return ServiceManager.getService(MyPluginSettings.class);
+        return ApplicationManager.getApplication().getService(MyPluginSettings.class);
     }
 
     @Nullable
@@ -51,5 +52,4 @@ public class MyPluginSettings implements PersistentStateComponent<MyPluginSettin
             this.featureEnabled = featureEnabled;
         }
     }
-
 }

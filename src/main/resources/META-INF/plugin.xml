@@ -86,6 +86,10 @@
         </intentionAction>
 
         <intentionAction>
+            <className>com.h8000572003.values.GenerateSourceMapperV2Action</className>
+        </intentionAction>
+
+        <intentionAction>
             <className>com.h8000572003.values.GenerateAllSetterNoCacheNameAction</className>
         </intentionAction>
         <intentionAction>

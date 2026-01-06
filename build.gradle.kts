@@ -1,23 +1,34 @@
 plugins {
     id("java")
-    id("org.jetbrains.kotlin.jvm") version "1.8.22"
-    id("org.jetbrains.intellij") version "1.17.3"
+    id("org.jetbrains.kotlin.jvm") version "1.9.22"
+
+    id("org.jetbrains.intellij.platform") version "2.1.0"
 }
 
 group = "com.h8000572003.values"
-version = "1.8.7"
+version = "1.8.8"
 
 repositories {
     mavenCentral()
+    intellijPlatform {
+        defaultRepositories()
+    }
+}
+dependencies {
+    // 在 2.x 中，目標 IDE 版本直接在這裡定義
+    intellijPlatform {
+        intellijIdeaCommunity("2024.1")
+        bundledPlugin("com.intellij.java")
+        instrumentationTools()
+    }
+
+    implementation("org.apache.commons:commons-lang3:3.18.0")
 }
 
-// Configure Gradle IntelliJ Plugin
-// Read more: https://plugins.jetbrains.com/docs/intellij/tools-gradle-intellij-plugin.html
-intellij {
-    version.set("2022.2.5")
-    type.set("IC") // Target IDE Platform
-
-    plugins.set(listOf("com.intellij.java"))
+intellijPlatform {
+    pluginConfiguration {
+        name.set("values")
+    }
 }
 
 tasks {
@@ -31,8 +42,8 @@ tasks {
     }
 
     patchPluginXml {
-        sinceBuild.set("222")
-        untilBuild.set("252.*")
+        sinceBuild.set("241")
+        untilBuild.set(null as String?)
     }
 
     signPlugin {

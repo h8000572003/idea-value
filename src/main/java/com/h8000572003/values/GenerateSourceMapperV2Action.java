@@ -17,26 +17,37 @@ import java.util.LinkedHashSet;
 import java.util.Objects;
 import java.util.Set;
 
-public class GenerateSourceMapperAction extends PsiElementBaseIntentionAction {
+public class GenerateSourceMapperV2Action extends PsiElementBaseIntentionAction {
 
-    public static final String TITLE = "Generated set/get based on parameter 1 as parameter 2";
+    public static final String TITLE = "Generated set/get based on parameter 1 return value";
     private PsiParameterList parameterList;
     private PsiClass psiClass1;
-
+    private PsiType returnType;
 
 
     @Override
     public void invoke(@NotNull Project project, Editor editor, @NotNull PsiElement element) throws IncorrectOperationException {
-        final Set<String> get1 = getMethods1(Contract.START_GET_OR_IS, psiClass1);
+        PsiClass psiClass = PsiTypesUtil.getPsiClass(returnType);
+        final Set<String> set1 = getMethods1(Contract.START_GET_OR_IS, psiClass);
+
+
+        String name1 = psiClass.getName();
+        String target = "target";
 
         StringBuilder insertText = new StringBuilder(StringUtils.EMPTY);
         String name = Objects.requireNonNull(parameterList.getParameter(0)).getName();
-        String name1 = Objects.requireNonNull(parameterList.getParameter(1)).getName();
-        for (String method : get1) {
+
+
+        insertText.append("%s %s=new %s();\n".formatted(
+                name1,
+                target,
+                name1
+        ));
+        for (String method : set1) {
             insertText.append("%s.%s(%s.%s());\n".formatted(
-                    name,
+                    target,
                     method.replaceFirst("get", "set").replaceFirst("is", "set"),
-                    name1,
+                    name,
                     method
             ));
         }
@@ -65,9 +76,11 @@ public class GenerateSourceMapperAction extends PsiElementBaseIntentionAction {
                 return false;
             }
             this.parameterList = psiMethod.getParameterList();
-            if (parameterList.getParametersCount() == 2) {
+            // Checks single parameter type and return type
+            if (parameterList.getParametersCount() >= 1) {
                 this.psiClass1 = getClassTypeFromParameter(0, this.parameterList);
-                return this.psiClass1 != null;
+                this.returnType = psiMethod.getReturnType();
+                return this.psiClass1 != null && returnType != null;
             }
         }
 
