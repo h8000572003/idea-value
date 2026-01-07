@@ -20,9 +20,9 @@ import java.util.Objects;
 public class GenerateAllByMethodAction extends PsiElementBaseIntentionAction {
 
     public static final String TEXT = "Generate fields by get/is method name";
-    private final List<PsiMethod> methods = new ArrayList<>();
+    private final List<SmartPsiElementPointer<PsiMethod>> methods = new ArrayList<>();
 
-    private PsiElement element;
+    private SmartPsiElementPointer<PsiElement> elementPointer;
 
     GenerateAllByMethodAction() {
 
@@ -32,8 +32,9 @@ public class GenerateAllByMethodAction extends PsiElementBaseIntentionAction {
 
     public void invoke(@NotNull Project project, Editor editor, @NotNull PsiElement element) throws IncorrectOperationException {
         final StringBuilder insertText = new StringBuilder("\n");
-        this.methods.forEach(method -> {
-
+        this.methods.forEach(methodPointer -> {
+            PsiMethod method = methodPointer.getElement();
+            if (method == null) return;
             PsiType returnType = method.getReturnType();
             String canonicalText = getClassName(Objects.requireNonNull(returnType));
             String uncapitalize = StringUtils.uncapitalize(method.getName().replace("get", "").replace("is", ""));
@@ -58,6 +59,8 @@ public class GenerateAllByMethodAction extends PsiElementBaseIntentionAction {
 
     private void insertText(Editor editor, StringBuilder insertText) {
         final Document document = editor.getDocument();
+        PsiElement element = elementPointer.getElement();
+        if (element == null) return;
         document.insertString(//
                 element.getTextOffset() + element.getText().length(),//
                 insertText.toString());//
@@ -73,10 +76,11 @@ public class GenerateAllByMethodAction extends PsiElementBaseIntentionAction {
         if (psiClass == null) {
             return false;
         }
-        this.element = element;
+        SmartPointerManager smartPointerManager = SmartPointerManager.getInstance(project);
+        this.elementPointer = smartPointerManager.createSmartPsiElementPointer(element);
         for (PsiMethod method : psiClass.getMethods()) {
             if (isMatch(method)) {
-                this.methods.add(method);
+                this.methods.add(smartPointerManager.createSmartPsiElementPointer(method));
             }
         }
         return !methods.isEmpty();

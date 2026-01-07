@@ -19,25 +19,23 @@ import java.util.Objects;
 import java.util.Set;
 
 public class GenerateSourceMapperV2Action extends PsiElementBaseIntentionAction {
-
     public static final String TITLE = "Generated set/get based on parameter 1 return value";
-    private PsiParameterList parameterList;
-    private PsiClass psiClass1;
+    private SmartPsiElementPointer<PsiParameterList> parameterListPointer;
+    private SmartPsiElementPointer<PsiClass> psiClass1Pointer;
     private PsiType returnType;
-
 
     @Override
     public void invoke(@NotNull Project project, Editor editor, @NotNull PsiElement element) throws IncorrectOperationException {
         PsiClass psiClass = PsiTypesUtil.getPsiClass(returnType);
         final Set<String> set1 = getMethods1(Contract.START_GET_OR_IS, psiClass);
 
-
         String name1 = psiClass.getName();
         String target = "target";
 
         StringBuilder insertText = new StringBuilder(StringUtils.EMPTY);
+        PsiParameterList parameterList = parameterListPointer.getElement();
+        if (parameterList == null) return;
         String name = Objects.requireNonNull(parameterList.getParameter(0)).getName();
-
 
         insertText.append("%s %s=new %s();\n".formatted(
                 name1,
@@ -85,15 +83,19 @@ public class GenerateSourceMapperV2Action extends PsiElementBaseIntentionAction 
                 return false;
             }
             this.returnType = psiMethod.getReturnType();
-            this.parameterList = psiMethod.getParameterList();
+            PsiParameterList parameterList = psiMethod.getParameterList();
+            this.parameterListPointer = SmartPointerManager.getInstance(project).createSmartPsiElementPointer(parameterList);
             if (parameterList.getParametersCount() >= 1 &&
                     !PsiTypes.voidType().equals(psiMethod.getReturnType())) {
                 if ((returnType instanceof PsiPrimitiveType)) {
                     return false;
                 }
-                this.psiClass1 = getClassTypeFromParameter(0, this.parameterList);
+                PsiClass psiClass1 = getClassTypeFromParameter(0, parameterList);
+                if (psiClass1 != null) {
+                    this.psiClass1Pointer = SmartPointerManager.getInstance(project).createSmartPsiElementPointer(psiClass1);
+                }
 
-                return this.psiClass1 != null && returnType != null;
+                return psiClass1 != null && returnType != null;
             }
         }
 

@@ -21,16 +21,20 @@ import java.util.Set;
 public class GenerateSourceMapperAction extends PsiElementBaseIntentionAction {
 
     public static final String TITLE = "Generated set/get based on parameter 1 as parameter 2";
-    private PsiParameterList parameterList;
-    private PsiClass psiClass1;
+    private SmartPsiElementPointer<PsiParameterList> parameterListPointer;
+    private SmartPsiElementPointer<PsiClass> psiClass1Pointer;
 
 
 
     @Override
     public void invoke(@NotNull Project project, Editor editor, @NotNull PsiElement element) throws IncorrectOperationException {
+        PsiClass psiClass1 = psiClass1Pointer.getElement();
+        if (psiClass1 == null) return;
         final Set<String> get1 = getMethods1(Contract.START_GET_OR_IS, psiClass1);
 
         StringBuilder insertText = new StringBuilder(StringUtils.EMPTY);
+        PsiParameterList parameterList = parameterListPointer.getElement();
+        if (parameterList == null) return;
         String name = Objects.requireNonNull(parameterList.getParameter(0)).getName();
         String name1 = Objects.requireNonNull(parameterList.getParameter(1)).getName();
         for (String method : get1) {
@@ -73,10 +77,14 @@ public class GenerateSourceMapperAction extends PsiElementBaseIntentionAction {
             if (psiMethod == null) {
                 return false;
             }
-            this.parameterList = psiMethod.getParameterList();
+            PsiParameterList parameterList = psiMethod.getParameterList();
+            this.parameterListPointer = SmartPointerManager.getInstance(project).createSmartPsiElementPointer(parameterList);
             if (parameterList.getParametersCount() == 2) {
-                this.psiClass1 = getClassTypeFromParameter(0, this.parameterList);
-                return this.psiClass1 != null;
+                PsiClass psiClass1 = getClassTypeFromParameter(0, parameterList);
+                if (psiClass1 != null) {
+                    this.psiClass1Pointer = SmartPointerManager.getInstance(project).createSmartPsiElementPointer(psiClass1);
+                }
+                return psiClass1 != null;
             }
         }
 

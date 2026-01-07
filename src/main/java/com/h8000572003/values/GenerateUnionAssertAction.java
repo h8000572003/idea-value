@@ -19,12 +19,15 @@ import java.util.Set;
 
 public class GenerateUnionAssertAction extends PsiElementBaseIntentionAction {
     public static final String TITLE = "Generated assert based on parameter 1 as parameter 2";
-    private PsiParameterList parameterList;
+    private SmartPsiElementPointer<PsiParameterList> parameterListPointer;
+
     @Override
     public void invoke(@NotNull Project project, Editor editor, @NotNull PsiElement element) throws IncorrectOperationException {
+        PsiParameterList parameterList = parameterListPointer.getElement();
+        if (parameterList == null) return;
         Set<String> getMethods = getMethods(Objects.requireNonNull(parameterList.getParameter(0)), Contract.START_GET_OR_IS);
 
-        insertCode(project,editor, getMethods, parameterList.getParameter(0), parameterList.getParameter(1));
+        insertCode(project, editor, getMethods, parameterList.getParameter(0), parameterList.getParameter(1));
 
     }
 
@@ -70,9 +73,10 @@ public class GenerateUnionAssertAction extends PsiElementBaseIntentionAction {
             if (psiMethod == null) {
                 return false;
             }
-            this.parameterList = psiMethod.getParameterList();
+            PsiParameterList parameterList = psiMethod.getParameterList();
+            this.parameterListPointer = SmartPointerManager.getInstance(project).createSmartPsiElementPointer(parameterList);
             if (parameterList.getParametersCount() == 2) {
-                PsiClass psiClass1 = getClassTypeFromParameter(0, this.parameterList);
+                PsiClass psiClass1 = getClassTypeFromParameter(0, parameterList);
                 return psiClass1 != null;
             }
         }

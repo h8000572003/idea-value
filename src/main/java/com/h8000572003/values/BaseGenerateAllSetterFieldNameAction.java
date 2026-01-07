@@ -22,8 +22,8 @@ import java.util.Objects;
 public class BaseGenerateAllSetterFieldNameAction extends PsiElementBaseIntentionAction {
 
     private final String text;
-    private List<PsiMethod> methods;
-    private PsiLocalVariable psiLocalVariable;
+    private List<SmartPsiElementPointer<PsiMethod>> methodPointers;
+    private SmartPsiElementPointer<PsiLocalVariable> psiLocalVariablePointer;
     private final Assignment assignment;
 
 
@@ -34,7 +34,11 @@ public class BaseGenerateAllSetterFieldNameAction extends PsiElementBaseIntentio
 
     public void invoke(@NotNull Project project, Editor editor, @NotNull PsiElement element) throws IncorrectOperationException {
         final StringBuilder insertText = new StringBuilder("\n");
-        this.methods.forEach(method -> {
+        PsiLocalVariable psiLocalVariable = psiLocalVariablePointer.getElement();
+        if (psiLocalVariable == null) return;
+        this.methodPointers.forEach(methodPointer -> {
+            PsiMethod method = methodPointer.getElement();
+            if (method == null) return;
             final String name = psiLocalVariable.getName();
             PsiParameterList parameterList = method.getParameterList();
             if (parameterList.getParametersCount() == 0) {
@@ -56,6 +60,8 @@ public class BaseGenerateAllSetterFieldNameAction extends PsiElementBaseIntentio
 
     private void insertText(Editor editor, StringBuilder insertText) {
         final Document document = editor.getDocument();
+        PsiLocalVariable psiLocalVariable = psiLocalVariablePointer.getElement();
+        if (psiLocalVariable == null) return;
         document.insertString(//
                 psiLocalVariable.getParent().getTextOffset() + psiLocalVariable.getParent().getText().length(),//
                 insertText.toString());//
@@ -63,19 +69,24 @@ public class BaseGenerateAllSetterFieldNameAction extends PsiElementBaseIntentio
 
 
     public boolean isAvailable(@NotNull Project project, Editor editor, @NotNull PsiElement element) {
-        this.methods = null;
-        this.psiLocalVariable = null;
+        this.methodPointers = null;
+        this.psiLocalVariablePointer = null;
         if (element instanceof PsiIdentifier) {
-            this.psiLocalVariable = PsiTreeUtil.getParentOfType(element, PsiLocalVariable.class);
+            PsiLocalVariable psiLocalVariable = PsiTreeUtil.getParentOfType(element, PsiLocalVariable.class);
             if (psiLocalVariable != null) {
                 PsiType type = psiLocalVariable.getType();
                 PsiClass psiClass = PsiTypesUtil.getPsiClass(type);
                 if (psiClass != null) {
                     PsiMethod[] methods1 = psiClass.getMethods();
-                    this.methods = Arrays.stream(methods1)//
+                    SmartPointerManager smartPointerManager = SmartPointerManager.getInstance(project);
+                    this.methodPointers = Arrays.stream(methods1)//
                             .filter(m -> m.getName().matches(Contract.START_SET))//
+                            .map(smartPointerManager::createSmartPsiElementPointer)
                             .toList();
-                    return !this.methods.isEmpty();
+                    if (!this.methodPointers.isEmpty()) {
+                        this.psiLocalVariablePointer = smartPointerManager.createSmartPsiElementPointer(psiLocalVariable);
+                        return true;
+                    }
                 }
 
             }
