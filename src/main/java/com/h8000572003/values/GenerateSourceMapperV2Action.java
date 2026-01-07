@@ -52,6 +52,7 @@ public class GenerateSourceMapperV2Action extends PsiElementBaseIntentionAction 
                     method
             ));
         }
+        insertText.append("return %s;\n".formatted(target));
         int offset = editor.getCaretModel().getOffset();
         Document document = editor.getDocument();
         document.insertString(editor.getCaretModel().getOffset(), insertText.toString());
@@ -83,11 +84,15 @@ public class GenerateSourceMapperV2Action extends PsiElementBaseIntentionAction 
             if (psiMethod == null) {
                 return false;
             }
+            this.returnType = psiMethod.getReturnType();
             this.parameterList = psiMethod.getParameterList();
-            // Checks single parameter type and return type
-            if (parameterList.getParametersCount() >= 1) {
+            if (parameterList.getParametersCount() >= 1 &&
+                    !PsiTypes.voidType().equals(psiMethod.getReturnType())) {
+                if ((returnType instanceof PsiPrimitiveType)) {
+                    return false;
+                }
                 this.psiClass1 = getClassTypeFromParameter(0, this.parameterList);
-                this.returnType = psiMethod.getReturnType();
+
                 return this.psiClass1 != null && returnType != null;
             }
         }

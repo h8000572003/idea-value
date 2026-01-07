@@ -88,7 +88,7 @@ public class GenerateAllByMethodAction extends PsiElementBaseIntentionAction {
                 method.getParameterList().getParametersCount() == 0 &&
                 method.hasModifierProperty(PsiModifier.PUBLIC) &&
                 !method.hasModifierProperty(PsiModifier.STATIC) &&
-                !method.getReturnType().equals(PsiType.VOID);
+                !Objects.equals(method.getReturnType(), PsiTypes.voidType());
     }
 
 
