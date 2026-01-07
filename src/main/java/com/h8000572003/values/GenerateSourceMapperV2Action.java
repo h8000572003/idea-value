@@ -7,6 +7,7 @@ import com.intellij.openapi.editor.Document;
 import com.intellij.openapi.editor.Editor;
 import com.intellij.openapi.project.Project;
 import com.intellij.psi.*;
+import com.intellij.psi.codeStyle.CodeStyleManager;
 import com.intellij.psi.util.PsiTreeUtil;
 import com.intellij.psi.util.PsiTypesUtil;
 import com.intellij.util.IncorrectOperationException;
@@ -51,16 +52,23 @@ public class GenerateSourceMapperV2Action extends PsiElementBaseIntentionAction 
                     method
             ));
         }
+        int offset = editor.getCaretModel().getOffset();
         Document document = editor.getDocument();
         document.insertString(editor.getCaretModel().getOffset(), insertText.toString());
 
-
+        PsiDocumentManager.getInstance(project).commitDocument(document);
+        PsiFile psiFile = PsiDocumentManager.getInstance(project).getPsiFile(document);
+        if (psiFile != null) {
+            CodeStyleManager.getInstance(project).reformatText(psiFile, offset, offset + insertText.length());
+        }
     }
 
     private static Set<String> getMethods1(String startWith, PsiClass psiClass) {
         Set<String> methodNames = new LinkedHashSet<>();
         for (PsiMethod method : psiClass.getMethods()) {
-            if (method.getName().matches(startWith)) {
+            if (method.hasModifierProperty(PsiModifier.PUBLIC) &&
+                    !method.hasModifierProperty(PsiModifier.STATIC) &&
+                    method.getName().matches(startWith)) {
                 methodNames.add(method.getName());
             }
         }

@@ -9,6 +9,7 @@ import com.intellij.openapi.editor.Document;
 import com.intellij.openapi.editor.Editor;
 import com.intellij.openapi.project.Project;
 import com.intellij.psi.*;
+import com.intellij.psi.codeStyle.CodeStyleManager;
 import com.intellij.psi.util.PsiTreeUtil;
 import com.intellij.psi.util.PsiTypesUtil;
 import com.intellij.util.IncorrectOperationException;
@@ -43,8 +44,14 @@ public class BaseGenerateAllSetterFieldNameAction extends PsiElementBaseIntentio
             final String value = this.assignment.getAssignment(type.getCanonicalText(), parameterList.getParameter(0));
             insertText.append("%s.%s(%s);\n".formatted(name, method.getName(), value));
         });
+        int offset = editor.getCaretModel().getOffset();
+        final Document document = editor.getDocument();
         insertText(editor, insertText);
-
+        PsiDocumentManager.getInstance(project).commitDocument(document);
+        PsiFile psiFile = PsiDocumentManager.getInstance(project).getPsiFile(document);
+        if (psiFile != null) {
+            CodeStyleManager.getInstance(project).reformatText(psiFile, offset, offset + insertText.length());
+        }
     }
 
     private void insertText(Editor editor, StringBuilder insertText) {

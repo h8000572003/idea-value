@@ -6,7 +6,7 @@ plugins {
 }
 
 group = "com.h8000572003.values"
-version = "1.8.8"
+version = "1.8.9"
 
 repositories {
     mavenCentral()
@@ -27,7 +27,10 @@ dependencies {
 
 intellijPlatform {
     pluginConfiguration {
-        name.set("values")
+        ideaVersion {
+            sinceBuild = "241"
+            untilBuild = "301.*"
+        }
     }
 }
 
@@ -41,10 +44,7 @@ tasks {
         kotlinOptions.jvmTarget = "17"
     }
 
-    patchPluginXml {
-        sinceBuild.set("241")
-        untilBuild.set("999.*")
-    }
+
 
     signPlugin {
         certificateChain.set(System.getenv("CERTIFICATE_CHAIN"))

@@ -7,6 +7,7 @@ import com.intellij.openapi.editor.Document;
 import com.intellij.openapi.editor.Editor;
 import com.intellij.openapi.project.Project;
 import com.intellij.psi.*;
+import com.intellij.psi.codeStyle.CodeStyleManager;
 import com.intellij.psi.util.PsiTreeUtil;
 import com.intellij.psi.util.PsiTypesUtil;
 import com.intellij.util.IncorrectOperationException;
@@ -22,12 +23,12 @@ public class GenerateUnionAssertAction extends PsiElementBaseIntentionAction {
     @Override
     public void invoke(@NotNull Project project, Editor editor, @NotNull PsiElement element) throws IncorrectOperationException {
         Set<String> getMethods = getMethods(Objects.requireNonNull(parameterList.getParameter(0)), Contract.START_GET_OR_IS);
-        insertCode(editor, getMethods, parameterList.getParameter(0), parameterList.getParameter(1));
 
+        insertCode(project,editor, getMethods, parameterList.getParameter(0), parameterList.getParameter(1));
 
     }
 
-    private static void insertCode(Editor editor, Set<String> get, PsiParameter parameter, PsiParameter parameter1) {
+    private static void insertCode(@NotNull Project project, Editor editor, Set<String> get, PsiParameter parameter, PsiParameter parameter1) {
         StringBuilder insertText = new StringBuilder("\n");
         for (String method : get) {
             insertText.append("assertEquals(%s.%s(), %s.%s());\n".formatted(
@@ -37,8 +38,14 @@ public class GenerateUnionAssertAction extends PsiElementBaseIntentionAction {
                     method
             ));
         }
+        int offset = editor.getCaretModel().getOffset();
         Document document = editor.getDocument();
         document.insertString(editor.getCaretModel().getOffset(), insertText.toString());
+        PsiDocumentManager.getInstance(project).commitDocument(document);
+        PsiFile psiFile = PsiDocumentManager.getInstance(project).getPsiFile(document);
+        if (psiFile != null) {
+            CodeStyleManager.getInstance(project).reformatText(psiFile, offset, offset + insertText.length());
+        }
     }
 
     private static Set<String> getMethods(PsiParameter psiParameter, String startWith) {
