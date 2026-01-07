@@ -64,6 +64,8 @@ public class GenerateAllByMethodAction extends PsiElementBaseIntentionAction {
         document.insertString(//
                 element.getTextOffset() + element.getText().length(),//
                 insertText.toString());//
+        elementPointer = null;
+        methods.clear();
     }
 
 

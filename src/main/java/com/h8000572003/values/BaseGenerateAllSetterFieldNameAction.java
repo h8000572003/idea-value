@@ -27,7 +27,7 @@ public class BaseGenerateAllSetterFieldNameAction extends PsiElementBaseIntentio
     private final Assignment assignment;
 
 
-    BaseGenerateAllSetterFieldNameAction(Assignment.NumberValueStrategy numberValueStrategy, String text) {
+    protected BaseGenerateAllSetterFieldNameAction(Assignment.NumberValueStrategy numberValueStrategy, String text) {
         this.text = text;
         this.assignment = new Assignment(numberValueStrategy);
     }
@@ -65,6 +65,8 @@ public class BaseGenerateAllSetterFieldNameAction extends PsiElementBaseIntentio
         document.insertString(//
                 psiLocalVariable.getParent().getTextOffset() + psiLocalVariable.getParent().getText().length(),//
                 insertText.toString());//
+        psiLocalVariablePointer = null;
+        methodPointers = null;
     }
 
 

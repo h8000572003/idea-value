@@ -1,76 +1,13 @@
 <!-- Plugin Configuration File. Read more: https://plugins.jetbrains.com/docs/intellij/plugin-configuration-file.html -->
 <idea-plugin>
-    <!-- Unique identifier of the plugin. It should be FQN. It cannot be changed between the plugin versions. -->
     <id>com.h8000572003.intellijplugin</id>
 
-    <!-- Public plugin name should be written in Title Case.
-         Guidelines: https://plugins.jetbrains.com/docs/marketplace/plugin-overview-page.html#plugin-name -->
     <name>Values</name>
-
-    <!-- A displayed Vendor name or Organization ID displayed on the Plugins Page. -->
     <vendor email="wa.addi@gmail.com" url="https://github.com/h8000572003">AndyTsai</vendor>
 
-    <!-- Description of the plugin displayed on the Plugin Page and IDE Plugin Manager.
-         Simple HTML elements (text formatting, paragraphs, and lists) can be added inside of <![CDATA[ ]]> tag.
-         Guidelines: https://plugins.jetbrains.com/docs/marketplace/plugin-overview-page.html#plugin-description -->
-    <description><![CDATA[
-   <p><a href="https://github.com/h8000572003/idea-value">GitHub</a></p>
-<p>generic code for generating common values </p>
-<ul>
-    <li>Two object assertions generate corresponding code:  on method block body Enter ALT+ENTER ，Click [generate all  source1 assertion sources2]</li>
-</ul>
-<ul>
-    <li>Two object assertions generate mapper code: on method block body Enter ALT+ENTER ，Click [generate all  source1 assertion sources2]</li>
-</ul>
-<ul>
-    <li>object set value by name : on variable Enter ALT+ENTER ，on variable [generate all setters no cache values] or [generate all setters cache name values]</li>
-</ul>
-<ul>
-    <li>object generate fields by method names : on variable Enter ALT+ENTER ，on variable [Generate fields by method name] </li>
-</ul>
-    ]]></description>
-
-    <change-notes><![CDATA[
-        <strong>1.4</strong>
-        <ul>
-            <li>[FIX]boolean type generate mapper and assert </li>
-        </ul>
-        <strong>1.5</strong>
-        <ul>
-            <li>[FEATHER]add Generate fields by method name </li>
-        </ul>
-        <strong>1.6</strong>
-        <ul>
-            <li>[FEATHER]support 232 </li>
-        </ul>
-        <strong>1.7</strong>
-        <ul>
-            <li>[FEATHER]support 241 </li>
-        </ul>
-         <strong>1.8</strong>
-        <ul>
-            <li>[FEATHER]add sql inject generate some parameters </li>
-        </ul>
-           <strong>1.8.6</strong>
-        <ul>
-            <li>[FEATHER]add if condition not null check  </li>
-        </ul>
-
-         </ul>
-           <strong>1.8.9</strong>
-        <ul>
-            <li>[FEATHER]add format  </li>
-        </ul>
-    ]]>
-    </change-notes>
-
-
-    <!-- Product and plugin compatibility requirements.
-         Read more: https://plugins.jetbrains.com/docs/intellij/plugin-compatibility.html -->
     <depends>com.intellij.modules.platform</depends>
     <depends>com.intellij.java</depends>
-    <!-- Extension points defined by the plugin.
-         Read more: https://plugins.jetbrains.com/docs/intellij/plugin-extension-points.html -->
+
     <extensions defaultExtensionNs="com.intellij">
         <applicationService
                 serviceImplementation="com.h8000572003.values.configurable.MyPluginSettings"></applicationService>
@@ -81,34 +18,52 @@
                 displayName="Values Settings"/>
 
         <intentionAction>
+            <language>JAVA</language>
             <className>com.h8000572003.values.GenerateAllSetterFieldNameAction</className>
+            <category>Java/Other</category>
         </intentionAction>
         <intentionAction>
+            <language>JAVA</language>
             <className>com.h8000572003.values.GenerateUnionAssertAction</className>
+            <category>Java/Other</category>
         </intentionAction>
 
         <intentionAction>
+            <language>JAVA</language>
             <className>com.h8000572003.values.GenerateSourceMapperAction</className>
+            <category>Java/Other</category>
         </intentionAction>
 
         <intentionAction>
+            <language>JAVA</language>
             <className>com.h8000572003.values.GenerateSourceMapperV2Action</className>
+            <category>Java/Other</category>
         </intentionAction>
 
         <intentionAction>
+            <language>JAVA</language>
             <className>com.h8000572003.values.GenerateAllSetterNoCacheNameAction</className>
+            <category>Java/Other</category>
         </intentionAction>
         <intentionAction>
+            <language>JAVA</language>
             <className>com.h8000572003.values.GenerateAllByMethodAction</className>
+            <category>Java/Other</category>
         </intentionAction>
         <intentionAction>
+            <language>JAVA</language>
             <className>com.h8000572003.values.GenerateMapFromStringWithoutDeclareAction</className>
+            <category>Java/Other</category>
         </intentionAction>
         <intentionAction>
+            <language>JAVA</language>
             <className>com.h8000572003.values.GenerateMapFromStringWithDeclareAction</className>
+            <category>Java/Other</category>
         </intentionAction>
         <intentionAction>
+            <language>JAVA</language>
             <className>com.h8000572003.values.AddNullCheckAction</className>
+            <category>Java/Other</category>
         </intentionAction>
     </extensions>
     <actions>

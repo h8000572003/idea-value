@@ -150,8 +150,8 @@ public abstract class GenerateSqlInjectFixAction extends PsiElementBaseIntention
 
         this.useParametersTypeService = useParametersTypeServiceMap.get(MyPluginSettings.getInstance().getState().getFeatureEnabled());
 
-        final List<PsiReferenceExpression> refs = PsiTreeUtil.getChildrenOfTypeAsList(psiPolyadicExpression, PsiReferenceExpression.class);
         if (psiPolyadicExpression != null) {
+            final List<PsiReferenceExpression> refs = PsiTreeUtil.getChildrenOfTypeAsList(psiPolyadicExpression, PsiReferenceExpression.class);
             String text = psiPolyadicExpression.getText();
             String sql = this.useParametersTypeService.getSql(refs, text, psiPolyadicExpression);
             PsiElementFactory factory = JavaPsiFacade.getElementFactory(project);
@@ -163,7 +163,7 @@ public abstract class GenerateSqlInjectFixAction extends PsiElementBaseIntention
 
             CopyPasteManager.getInstance().setContents(new StringSelection(parameterValues));
         }
-
+        useParametersTypeService = null;
 
     }
 

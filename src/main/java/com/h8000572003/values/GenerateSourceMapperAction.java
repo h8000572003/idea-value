@@ -55,6 +55,8 @@ public class GenerateSourceMapperAction extends PsiElementBaseIntentionAction {
         if (psiFile != null) {
             CodeStyleManager.getInstance(project).reformatText(psiFile, offset, offset + insertText.length());
         }
+        psiClass1Pointer = null;
+        parameterListPointer = null;
     }
 
     private static Set<String> getMethods1(String startWith, PsiClass psiClass) {

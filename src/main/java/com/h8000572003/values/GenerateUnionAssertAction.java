@@ -28,7 +28,7 @@ public class GenerateUnionAssertAction extends PsiElementBaseIntentionAction {
         Set<String> getMethods = getMethods(Objects.requireNonNull(parameterList.getParameter(0)), Contract.START_GET_OR_IS);
 
         insertCode(project, editor, getMethods, parameterList.getParameter(0), parameterList.getParameter(1));
-
+        parameterListPointer = null;
     }
 
     private static void insertCode(@NotNull Project project, Editor editor, Set<String> get, PsiParameter parameter, PsiParameter parameter1) {
