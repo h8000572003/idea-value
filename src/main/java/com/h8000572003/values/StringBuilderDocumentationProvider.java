@@ -31,11 +31,14 @@ public class StringBuilderDocumentationProvider extends AbstractDocumentationPro
     private boolean isAccumulator(PsiType type) {
         if (type == null) return false;
         String canonicalText = type.getCanonicalText();
-        return canonicalText.equals("java.lang.StringBuilder") || canonicalText.equals("java.lang.String");
+
+        return canonicalText.equals("java.lang.StringBuilder") || canonicalText.equals("java.lang.String") || canonicalText.equals("java.lang.StringBuffer")  ;
     }
 
-    private boolean isStringBuilder(PsiType type) {
-        return type != null && type.getCanonicalText().equals("java.lang.StringBuilder");
+    private boolean isBuilderType(PsiType type) {
+        if (type == null) return false;
+        String canonicalText = type.getCanonicalText();
+        return canonicalText.equals("java.lang.StringBuilder") || canonicalText.equals("java.lang.StringBuffer");
     }
 
     private String getAccumulatorContent(PsiVariable variable) {
@@ -43,23 +46,23 @@ public class StringBuilderDocumentationProvider extends AbstractDocumentationPro
         if (scope == null) return null;
 
         StringBuilder content = new StringBuilder();
-        boolean isStringBuilder = isStringBuilder(variable.getType());
+        boolean isBuilder = isBuilderType(variable.getType());
 
         // Handle initial value
         PsiExpression initializer = variable.getInitializer();
-        if (isStringBuilder && initializer instanceof PsiNewExpression) {
+        if (isBuilder && initializer instanceof PsiNewExpression) {
             PsiExpressionList argumentList = ((PsiNewExpression) initializer).getArgumentList();
             if (argumentList != null && argumentList.getExpressions().length > 0) {
                 content.append(evaluateExpression(argumentList.getExpressions()[0], initializer)).append("\n");
             }
-        } else if (!isStringBuilder && initializer != null) {
+        } else if (!isBuilder && initializer != null) {
             content.append(evaluateExpression(initializer, initializer)).append("\n");
         }
 
         PsiIfStatement lastIfStatement = null;
 
         // Find all relevant expressions (method calls for StringBuilder, assignments for String)
-        if (isStringBuilder) {
+        if (isBuilder) {
             Collection<PsiReferenceExpression> references = PsiTreeUtil.findChildrenOfType(scope, PsiReferenceExpression.class);
             for (PsiReferenceExpression ref : references) {
                 if (ref.isReferenceTo(variable)) {
@@ -72,7 +75,7 @@ public class StringBuilderDocumentationProvider extends AbstractDocumentationPro
                             if (lastIfStatement != null) content.append("fi\n");
                             if (currentIf != null) {
                                 PsiExpression condition = currentIf.getCondition();
-                                String condText = condition != null ? condition.getText() : "";
+                                String condText = condition != null ? condition.getText().replaceAll("\\s+", " ") : "";
                                 content.append("=== if(").append(condText).append("){\n");
                             }
                             lastIfStatement = currentIf;
@@ -87,7 +90,7 @@ public class StringBuilderDocumentationProvider extends AbstractDocumentationPro
                                         if (currentIf != null) content.append("\t");
                                         content.append(evaluateExpression(args[0], methodCall)).append("\n");
                                     }
-                                } else if (!isStringBuilder(methodCall.getType())) {
+                                } else if (!isBuilderType(methodCall.getType())) {
                                     break;
                                 }
                             }
@@ -110,7 +113,7 @@ public class StringBuilderDocumentationProvider extends AbstractDocumentationPro
                                 if (lastIfStatement != null) content.append("fi\n");
                                 if (currentIf != null) {
                                     PsiExpression condition = currentIf.getCondition();
-                                    String condText = condition != null ? condition.getText() : "";
+                                    String condText = condition != null ? condition.getText().replaceAll("\\s+", " ") : "";
                                     content.append("=== if(").append(condText).append("){\n");
                                 }
                                 lastIfStatement = currentIf;
@@ -129,8 +132,7 @@ public class StringBuilderDocumentationProvider extends AbstractDocumentationPro
         }
 
         if (content.length() == 0) return null;
-        String result = content.toString().replace("\n", "<br/>").replace("\t", "&nbsp;&nbsp;&nbsp;&nbsp;");
-        return "Content: <br/><b>" + result + "</b>";
+        return "Content: <pre><b>" + content.toString() + "</b></pre>";
     }
 
     private boolean isAppendCall(PsiMethodCallExpression methodCall) {
@@ -164,7 +166,7 @@ public class StringBuilderDocumentationProvider extends AbstractDocumentationPro
             }
         } else if (expression instanceof PsiMethodCallExpression) {
             PsiMethodCallExpression methodCall = (PsiMethodCallExpression) expression;
-            return " +*$" + methodCall.getMethodExpression().getReferenceName() + "()";
+            return " $" + methodCall.getMethodExpression().getReferenceName() + "() ";
         }
         return "";
     }
