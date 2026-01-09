@@ -59,7 +59,7 @@ public class StringBuilderDocumentationProvider extends AbstractDocumentationPro
             content.append(evaluateExpression(initializer, initializer)).append("\n");
         }
 
-        PsiIfStatement lastIfStatement = null;
+        java.util.List<IfBranch> activeIfs = new java.util.ArrayList<>();
 
         // Find all relevant expressions (method calls for StringBuilder, assignments for String)
         if (isBuilder) {
@@ -69,17 +69,9 @@ public class StringBuilderDocumentationProvider extends AbstractDocumentationPro
                     PsiElement parent = ref.getParent();
                     if (parent instanceof PsiReferenceExpression && ((PsiReferenceExpression) parent).getQualifierExpression() == ref) {
                         PsiElement current = parent.getParent();
-                        
-                        PsiIfStatement currentIf = PsiTreeUtil.getParentOfType(current, PsiIfStatement.class);
-                        if (currentIf != lastIfStatement) {
-                            if (lastIfStatement != null) content.append("fi\n");
-                            if (currentIf != null) {
-                                PsiExpression condition = currentIf.getCondition();
-                                String condText = condition != null ? condition.getText().replaceAll("\\s+", " ") : "";
-                                content.append("=== if(").append(condText).append("){\n");
-                            }
-                            lastIfStatement = currentIf;
-                        }
+
+                        java.util.List<IfBranch> targetIfs = getParentIfs(current, scope);
+                        activeIfs = updateIfContext(content, activeIfs, targetIfs);
 
                         while (current instanceof PsiMethodCallExpression || current instanceof PsiReferenceExpression) {
                             if (current instanceof PsiMethodCallExpression) {
@@ -87,8 +79,7 @@ public class StringBuilderDocumentationProvider extends AbstractDocumentationPro
                                 if (isAppendCall(methodCall)) {
                                     PsiExpression[] args = methodCall.getArgumentList().getExpressions();
                                     if (args.length > 0) {
-                                        if (currentIf != null) content.append("\t");
-                                        content.append(evaluateExpression(args[0], methodCall)).append("\n");
+                                        appendIndented(content, activeIfs.size(), evaluateExpression(args[0], methodCall), activeIfs);
                                     }
                                 } else if (!isBuilderType(methodCall.getType())) {
                                     break;
@@ -108,31 +99,143 @@ public class StringBuilderDocumentationProvider extends AbstractDocumentationPro
                     if (assignment.getOperationTokenType() == JavaTokenType.PLUSEQ) {
                         PsiExpression rExpr = assignment.getRExpression();
                         if (rExpr != null) {
-                            PsiIfStatement currentIf = PsiTreeUtil.getParentOfType(assignment, PsiIfStatement.class);
-                            if (currentIf != lastIfStatement) {
-                                if (lastIfStatement != null) content.append("fi\n");
-                                if (currentIf != null) {
-                                    PsiExpression condition = currentIf.getCondition();
-                                    String condText = condition != null ? condition.getText().replaceAll("\\s+", " ") : "";
-                                    content.append("=== if(").append(condText).append("){\n");
-                                }
-                                lastIfStatement = currentIf;
-                            }
+                            java.util.List<IfBranch> targetIfs = getParentIfs(assignment, scope);
+                            activeIfs = updateIfContext(content, activeIfs, targetIfs);
 
-                            if (currentIf != null) content.append("\t");
-                            content.append(evaluateExpression(rExpr, assignment)).append("\n");
+                            appendIndented(content, activeIfs.size(), evaluateExpression(rExpr, assignment), activeIfs);
                         }
                     }
                 }
             }
         }
 
-        if (lastIfStatement != null) {
-            content.append("fi\n");
-        }
+        // Close all remaining ifs
+        updateIfContext(content, activeIfs, new java.util.ArrayList<>());
 
         if (content.length() == 0) return null;
         return "Content: <pre><b>" + content.toString() + "</b></pre>";
+    }
+
+    private static class IfBranch {
+        final PsiIfStatement ifStatement;
+        final boolean isElse;
+
+        IfBranch(PsiIfStatement ifStatement, boolean isElse) {
+            this.ifStatement = ifStatement;
+            this.isElse = isElse;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            IfBranch ifBranch = (IfBranch) o;
+            return isElse == ifBranch.isElse && ifStatement.equals(ifBranch.ifStatement);
+        }
+
+        @Override
+        public int hashCode() {
+            return java.util.Objects.hash(ifStatement, isElse);
+        }
+    }
+
+    private java.util.List<IfBranch> getParentIfs(PsiElement element, PsiElement scope) {
+        java.util.List<IfBranch> ifs = new java.util.ArrayList<>();
+        PsiElement current = element;
+        while (current != null && current != scope) {
+            PsiElement parent = current.getParent();
+            if (parent instanceof PsiIfStatement) {
+                PsiIfStatement ifStmt = (PsiIfStatement) parent;
+                boolean isElse = (ifStmt.getElseBranch() == current);
+                ifs.add(0, new IfBranch(ifStmt, isElse));
+            }
+            current = parent;
+        }
+        return ifs;
+    }
+
+    private java.util.List<IfBranch> updateIfContext(StringBuilder content, java.util.List<IfBranch> activeIfs, java.util.List<IfBranch> targetIfs) {
+        int commonPrefix = 0;
+        while (commonPrefix < activeIfs.size() && commonPrefix < targetIfs.size() && activeIfs.get(commonPrefix).equals(targetIfs.get(commonPrefix))) {
+            commonPrefix++;
+        }
+
+        // Close ifs
+        for (int i = activeIfs.size() - 1; i >= commonPrefix; i--) {
+            IfBranch current = activeIfs.get(i);
+            boolean isElseIfTransition = false;
+            if (current.isElse && i + 1 < activeIfs.size()) {
+                IfBranch next = activeIfs.get(i + 1);
+                if (next.ifStatement.getParent() == current.ifStatement) {
+                    isElseIfTransition = true;
+                }
+            }
+
+            if (!isElseIfTransition) {
+                int indent = getIndentLevel(activeIfs, i);
+                for (int j = 0; j < indent; j++) content.append("\t");
+                content.append("}\n");
+            }
+        }
+
+        // Open new ifs
+        boolean skipIndent = false;
+        for (int i = commonPrefix; i < targetIfs.size(); i++) {
+            IfBranch current = targetIfs.get(i);
+            int indent = getIndentLevel(targetIfs, i);
+            
+            if (!skipIndent) {
+                for (int j = 0; j < indent; j++) content.append("\t");
+            }
+            skipIndent = false;
+
+            boolean isElseIf = false;
+            if (current.isElse && i + 1 < targetIfs.size()) {
+                IfBranch next = targetIfs.get(i + 1);
+                if (next.ifStatement.getParent() == current.ifStatement) {
+                    isElseIf = true;
+                }
+            }
+
+            if (isElseIf) {
+                content.append("else ");
+                skipIndent = true;
+            } else if (current.isElse) {
+                content.append("else {\n");
+            } else {
+                PsiExpression condition = current.ifStatement.getCondition();
+                String condText = condition != null ? condition.getText().replaceAll("\\s+", " ") : "";
+                content.append("if(").append(condText).append("){\n");
+            }
+        }
+
+        return targetIfs;
+    }
+
+    private int getIndentLevel(java.util.List<IfBranch> ifs, int index) {
+        int indent = 0;
+        for (int i = 0; i < index; i++) {
+            IfBranch current = ifs.get(i);
+            boolean isElseIfTransition = false;
+            if (current.isElse && i + 1 < ifs.size()) {
+                IfBranch next = ifs.get(i + 1);
+                if (next.ifStatement.getParent() == current.ifStatement) {
+                    isElseIfTransition = true;
+                }
+            }
+            if (!isElseIfTransition) {
+                indent++;
+            }
+        }
+        return indent;
+    }
+
+    private void appendIndented(StringBuilder content, int listSize, String text, java.util.List<IfBranch> ifs) {
+        int indentLevel = getIndentLevel(ifs, listSize);
+        for (int i = 0; i < indentLevel; i++) {
+            content.append("\t");
+        }
+        content.append(text).append("\n");
     }
 
     private boolean isAppendCall(PsiMethodCallExpression methodCall) {
@@ -166,14 +269,14 @@ public class StringBuilderDocumentationProvider extends AbstractDocumentationPro
             }
         } else if (expression instanceof PsiMethodCallExpression) {
             PsiMethodCallExpression methodCall = (PsiMethodCallExpression) expression;
-            return " $" + methodCall.getMethodExpression().getReferenceName() + "() ";
+            return " ${" + methodCall.getMethodExpression().getReferenceName() + "}()";
         }
         return "";
     }
 
     private String resolveVariableValue(PsiVariable variable, PsiElement context) {
         PsiElement scope = PsiTreeUtil.getParentOfType(variable, PsiCodeBlock.class);
-        if (scope == null) return " $" + variable.getName() + " ";
+        if (scope == null) return " ${" + variable.getName() + "}";
 
         StringBuilder value = new StringBuilder();
         PsiExpression initializer = variable.getInitializer();
@@ -202,7 +305,7 @@ public class StringBuilderDocumentationProvider extends AbstractDocumentationPro
         }
 
         if (value.length() == 0) {
-            return " $" + variable.getName() + " ";
+            return " ${" + variable.getName() + "}";
         }
         return value.toString();
     }
