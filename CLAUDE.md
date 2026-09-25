@@ -11,7 +11,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 IntelliJ IDEA 外掛「Values」（plugin id `com.h8000572003.intellijplugin`），以 ALT+ENTER intention 產生常用 Java 程式碼：setter 填值、物件間 mapper / assertion、依 getter 產生欄位、`if` null 檢查、SQL injection 修正，另有 String/StringBuilder 累加內容的快速文件。功能說明見 `README.md`。
 
 - 開發主線是 `main`；`master` 是舊分支，不要以它為基礎。
-- 版本號在 `gradle.properties` 的 `pluginVersion`；每次升版同時在 `plugin.xml` 的 `<change-notes>` 加一筆。發佈流程見 `docs/RELEASE.md`（推送 `v<pluginVersion>` tag 觸發 `Release` workflow）。
+- 發佈全自動（見 `docs/RELEASE.md`）：合併到 `main` 即發佈 EAP 版到 Marketplace `eap` 頻道；手動執行 `Release` workflow 發佈正式版並打 `vX.Y.Z` tag。版本號由 `.github/scripts/version.sh` 依 tag 計算（預設升 patch，commit 訊息含 `[minor]`／`[major]` 則升對應版號），不需手動改 `gradle.properties`。
+- Change notes 自動取自上次正式版以來的 commit 標題，所以 commit 標題要寫成使用者看得懂的變更說明。
+- 修改 `version.sh` 時先改 `.github/scripts/test-version.sh`（`Build` workflow 會執行）。
 
 ## 常用指令
 

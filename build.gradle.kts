@@ -36,6 +36,10 @@ java {
 
 intellijPlatform {
     pluginConfiguration {
+        // The release workflow generates change notes from commit messages; local builds keep plugin.xml's.
+        changeNotes = providers.gradleProperty("changeNotesFile").flatMap {
+            providers.fileContents(layout.projectDirectory.file(it)).asText
+        }
         ideaVersion {
             sinceBuild = providers.gradleProperty("pluginSinceBuild")
             untilBuild = provider { null }

@@ -9,6 +9,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0  # version.sh reads tags and history
+      - name: Test release version script
+        run: .github/scripts/test-version.sh
       - name: Set up JDK 21
         uses: actions/setup-java@v5
         with:
@@ -24,6 +28,15 @@ jobs:
           name: plugin-zip
           path: build/distributions/*.zip
           if-no-files-found: error
+      - name: Check release change notes are applied
+        run: |
+          VERSION=$(.github/scripts/version.sh eap)
+          .github/scripts/version.sh notes > build/change-notes.html
+          ./gradlew patchPluginXml -PpluginVersion="$VERSION" -PchangeNotesFile=build/change-notes.html
+          PATCHED=$(find build/tmp/patchPluginXml -name plugin.xml)
+          grep -q "<version>$VERSION</version>" "$PATCHED"
+          grep -qF "<ul><li>" "$PATCHED"  # generated notes; plugin.xml's own notes are formatted differently
+          echo "plugin.xml patched with version $VERSION and generated change notes"
       - name: Upload test reports
         if: failure()
         uses: actions/upload-artifact@v5
