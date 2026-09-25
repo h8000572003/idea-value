@@ -59,6 +59,10 @@
         <ul>
             <li>[FEATHER]add get String & StringBuilder get value  </li>
         </ul>
+           <strong>1.10.0</strong>
+        <ul>
+            <li>[FIX]rewrite sql injection fix: correct quote handling, LIKE, method calls, constants and accumulated sql; insert parameter code instead of copying to clipboard; reject identifiers and IN lists</li>
+        </ul>
     ]]>
     </change-notes>
 

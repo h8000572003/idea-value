@@ -12,7 +12,9 @@
 - Generate all setters no cache values：物件根據名稱塞特定根據名稱，若數字類時，將隨機產生流水號且不重複資料
 - Generated set/get based on parameter 1 as parameter 2: 物件對應set value根據參數1對應參數2
 - Generated assert based on parameter 1 as parameter 2：產生物件之間assertion根據參數1對應參數2
-- Generate fix sql injection related  declare parameters 
-- Generate fix sql injection related  no declare parameters 
+- Generate fix sql injection related declare parameters：將 SQL 字串串接的值改為綁定參數（:name 或 ?），並於該行前產生宣告與放入參數的程式
+- Generate fix sql injection related without declare parameters：同上，但不產生參數集合的宣告
+  - 引號內的值（含 LIKE '%...%'）整段成為一個參數，常數與累加中的 SQL 變數（sql = sql + ...）保留不綁定
+  - 無法安全綁定的位置（ORDER BY / 表格、欄位名稱、IN (...) 整串、黏在 SQL 字詞上的值）會顯示錯誤提示而不修改程式
 - add setting ui 
 - add if condition not null check 
