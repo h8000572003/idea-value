@@ -28,7 +28,7 @@ Gradle 9 wrapper、JDK 21 執行（編譯目標 Java 17）。
 ```
 
 - 根專案的編譯與測試需要從 JetBrains 儲存庫下載 IntelliJ（版本由 `gradle.properties` 的 `platformVersion` 決定）。無法連線 JetBrains 時只有 `:core` 能在本機建置，其餘交給 GitHub Actions 的 `Build` workflow（`./gradlew test buildPlugin`，測試逐項列在 log 中）驗證。
-- 沒有 lint 設定；`code_quality.yml` 在 CI 跑 Qodana。
+- 沒有 lint 或靜態分析設定；CI 只有 `Build` 與 `Release` 兩個 workflow。
 
 ## 開發方式
 
