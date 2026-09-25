@@ -6,11 +6,10 @@ target
 
 .run
 /values.iml
-/build/
+build/
 
 /.idea/
 /.gradle/
 /.run/
-/gradle/
 
 .intellijPlatform

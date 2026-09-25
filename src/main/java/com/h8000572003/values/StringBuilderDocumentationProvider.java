@@ -1,368 +1,242 @@
 package com.h8000572003.values;
 
+import com.h8000572003.values.doc.AccumulatedContent;
+import com.h8000572003.values.doc.Fragment;
+import com.h8000572003.values.doc.Level;
 import com.intellij.lang.documentation.AbstractDocumentationProvider;
 import com.intellij.psi.*;
 import com.intellij.psi.util.PsiTreeUtil;
+import com.intellij.psi.util.PsiUtil;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.Collection;
-import java.util.Objects;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
+/**
+ * Quick documentation for a String/StringBuilder/StringBuffer variable: the text appended to it,
+ * with the surrounding if/else/switch/loop structure.
+ */
 public class StringBuilderDocumentationProvider extends AbstractDocumentationProvider {
+
+    private static final int MAX_RESOLVE_DEPTH = 5;
+
+    private enum Kind {STRING, BUILDER}
 
     @Override
     public @Nullable String generateDoc(PsiElement element, @Nullable PsiElement originalElement) {
-        if (element instanceof PsiVariable) {
-            PsiVariable variable = (PsiVariable) element;
-            if (isAccumulator(variable.getType())) {
-                return getAccumulatorContent(variable);
+        if (!(element instanceof PsiVariable variable)) {
+            return null;
+        }
+        Kind kind = kindOf(variable.getType());
+        PsiElement scope = scopeOf(variable);
+        if (kind == null || scope == null) {
+            return null;
+        }
+        List<Fragment> fragments = new ArrayList<>();
+        PsiExpression initial = initialContent(variable, kind);
+        if (initial != null) {
+            fragments.add(new Fragment(evaluate(initial, 0), path(variable, scope)));
+        }
+        for (PsiReferenceExpression reference : PsiTreeUtil.findChildrenOfType(scope, PsiReferenceExpression.class)) {
+            if (reference.isReferenceTo(variable)) {
+                String appended = kind == Kind.BUILDER ? appendedByChain(reference) : appendedByAssignment(reference, variable);
+                if (appended != null) {
+                    fragments.add(new Fragment(appended, path(reference, scope)));
+                }
             }
-        } else if (element instanceof PsiReferenceExpression) {
-             PsiElement resolved = ((PsiReferenceExpression) element).resolve();
-             if (resolved instanceof PsiVariable) {
-                 PsiVariable variable = (PsiVariable) resolved;
-                 if (isAccumulator(variable.getType())) {
-                     return getAccumulatorContent(variable);
-                 }
-             }
+        }
+        return fragments.isEmpty() ? null : AccumulatedContent.toHtml(AccumulatedContent.render(fragments));
+    }
+
+    private static @Nullable Kind kindOf(PsiType type) {
+        if (type == null) {
+            return null;
+        }
+        return switch (type.getCanonicalText()) {
+            case CommonClassNames.JAVA_LANG_STRING -> Kind.STRING;
+            case CommonClassNames.JAVA_LANG_STRING_BUILDER, CommonClassNames.JAVA_LANG_STRING_BUFFER -> Kind.BUILDER;
+            default -> null;
+        };
+    }
+
+    private static @Nullable PsiElement scopeOf(PsiVariable variable) {
+        if (variable instanceof PsiParameter parameter) {
+            return parameter.getDeclarationScope();
+        }
+        return variable instanceof PsiLocalVariable ? PsiTreeUtil.getParentOfType(variable, PsiCodeBlock.class) : null;
+    }
+
+    /** {@code "a"} of {@code String s = "a"} or of {@code new StringBuilder("a")}, but not a capacity. */
+    private static @Nullable PsiExpression initialContent(PsiVariable variable, Kind kind) {
+        PsiExpression initializer = variable.getInitializer();
+        if (kind == Kind.STRING || initializer == null) {
+            return initializer;
+        }
+        if (initializer instanceof PsiNewExpression newExpression && newExpression.getArgumentList() != null) {
+            PsiExpression[] arguments = newExpression.getArgumentList().getExpressions();
+            if (arguments.length == 1 && !(arguments[0].getType() instanceof PsiPrimitiveType)) {
+                return arguments[0];
+            }
         }
         return null;
     }
 
-    private boolean isAccumulator(PsiType type) {
-        if (type == null) return false;
-        String canonicalText = type.getCanonicalText();
-
-        return canonicalText.equals("java.lang.StringBuilder") || canonicalText.equals("java.lang.String") || canonicalText.equals("java.lang.StringBuffer")  ;
-    }
-
-    private boolean isBuilderType(PsiType type) {
-        if (type == null) return false;
-        String canonicalText = type.getCanonicalText();
-        return canonicalText.equals("java.lang.StringBuilder") || canonicalText.equals("java.lang.StringBuffer");
-    }
-
-    private String getAccumulatorContent(PsiVariable variable) {
-        PsiElement scope = PsiTreeUtil.getParentOfType(variable, PsiCodeBlock.class);
-        if (scope == null) return null;
-
-        StringBuilder content = new StringBuilder();
-        boolean isBuilder = isBuilderType(variable.getType());
-
-        // Handle initial value
-        PsiExpression initializer = variable.getInitializer();
-        if (isBuilder && initializer instanceof PsiNewExpression) {
-            PsiExpressionList argumentList = ((PsiNewExpression) initializer).getArgumentList();
-            if (argumentList != null && argumentList.getExpressions().length > 0) {
-                content.append(evaluateExpression(argumentList.getExpressions()[0], initializer)).append("\n");
+    /** Arguments of {@code sb.append(a).append(b)} starting at {@code sb}, joined. */
+    private static @Nullable String appendedByChain(PsiReferenceExpression reference) {
+        StringBuilder text = new StringBuilder();
+        boolean appended = false;
+        PsiElement current = reference;
+        while (current.getParent() instanceof PsiReferenceExpression method
+                && method.getQualifierExpression() == current
+                && method.getParent() instanceof PsiMethodCallExpression call) {
+            if (!"append".equals(method.getReferenceName())) {
+                break;
             }
-        } else if (!isBuilder && initializer != null) {
-            content.append(evaluateExpression(initializer, initializer)).append("\n");
+            PsiExpression[] arguments = call.getArgumentList().getExpressions();
+            if (arguments.length > 0) {
+                text.append(evaluate(arguments[0], 0));
+                appended = true;
+            }
+            current = call;
         }
+        return appended ? text.toString() : null;
+    }
 
-        java.util.List<ControlBranch> activeBranches = new java.util.ArrayList<>();
-
-        // Find all relevant expressions (method calls for StringBuilder, assignments for String)
-        if (isBuilder) {
-            Collection<PsiReferenceExpression> references = PsiTreeUtil.findChildrenOfType(scope, PsiReferenceExpression.class);
-            for (PsiReferenceExpression ref : references) {
-                if (ref.isReferenceTo(variable)) {
-                    PsiElement parent = ref.getParent();
-                    if (parent instanceof PsiReferenceExpression && ((PsiReferenceExpression) parent).getQualifierExpression() == ref) {
-                        PsiElement current = parent.getParent();
-
-                        java.util.List<ControlBranch> targetBranches = getParentBranches(current, scope);
-                        activeBranches = updateControlContext(content, activeBranches, targetBranches);
-
-                        while (current instanceof PsiMethodCallExpression || current instanceof PsiReferenceExpression) {
-                            if (current instanceof PsiMethodCallExpression) {
-                                PsiMethodCallExpression methodCall = (PsiMethodCallExpression) current;
-                                if (isAppendCall(methodCall)) {
-                                    PsiExpression[] args = methodCall.getArgumentList().getExpressions();
-                                    if (args.length > 0) {
-                                        appendIndented(content, activeBranches.size(), evaluateExpression(args[0], methodCall), activeBranches);
-                                    }
-                                } else if (!isBuilderType(methodCall.getType())) {
-                                    break;
-                                }
-                            }
-                            current = current.getParent();
-                        }
-                    }
-                }
+    /** Right side of {@code s += x} or {@code s = s + x}. */
+    private static @Nullable String appendedByAssignment(PsiReferenceExpression reference, PsiVariable variable) {
+        if (!(reference.getParent() instanceof PsiAssignmentExpression assignment)
+                || assignment.getLExpression() != reference || assignment.getRExpression() == null) {
+            return null;
+        }
+        PsiExpression right = assignment.getRExpression();
+        if (assignment.getOperationTokenType() == JavaTokenType.PLUSEQ) {
+            return evaluate(right, 0);
+        }
+        if (assignment.getOperationTokenType() == JavaTokenType.EQ
+                && PsiUtil.skipParenthesizedExprDown(right) instanceof PsiPolyadicExpression concatenation
+                && concatenation.getOperationTokenType() == JavaTokenType.PLUS
+                && concatenation.getOperands()[0] instanceof PsiReferenceExpression first
+                && first.isReferenceTo(variable)) {
+            StringBuilder text = new StringBuilder();
+            PsiExpression[] operands = concatenation.getOperands();
+            for (int i = 1; i < operands.length; i++) {
+                text.append(evaluate(operands[i], 0));
             }
-        } else {
-            // String +=
-            Collection<PsiAssignmentExpression> assignments = PsiTreeUtil.findChildrenOfType(scope, PsiAssignmentExpression.class);
-            for (PsiAssignmentExpression assignment : assignments) {
-                PsiExpression lExpr = assignment.getLExpression();
-                if (lExpr instanceof PsiReferenceExpression && ((PsiReferenceExpression) lExpr).isReferenceTo(variable)) {
-                    if (assignment.getOperationTokenType() == JavaTokenType.PLUSEQ) {
-                        PsiExpression rExpr = assignment.getRExpression();
-                        if (rExpr != null) {
-                            java.util.List<ControlBranch> targetBranches = getParentBranches(assignment, scope);
-                            activeBranches = updateControlContext(content, activeBranches, targetBranches);
+            return text.toString();
+        }
+        return null;
+    }
 
-                            appendIndented(content, activeBranches.size(), evaluateExpression(rExpr, assignment), activeBranches);
-                        }
-                    }
-                }
+    /** Text an expression contributes; values that cannot be known are shown as {@code ${expression}}. */
+    private static String evaluate(PsiExpression expression, int depth) {
+        expression = PsiUtil.skipParenthesizedExprDown(expression);
+        if (expression == null) {
+            return "";
+        }
+        Object constant = JavaPsiFacade.getInstance(expression.getProject())
+                .getConstantEvaluationHelper().computeConstantExpression(expression);
+        if (constant != null) {
+            return String.valueOf(constant);
+        }
+        if (expression instanceof PsiPolyadicExpression concatenation
+                && concatenation.getOperationTokenType() == JavaTokenType.PLUS
+                && kindOf(concatenation.getType()) == Kind.STRING) {
+            StringBuilder text = new StringBuilder();
+            for (PsiExpression operand : concatenation.getOperands()) {
+                text.append(evaluate(operand, depth));
+            }
+            return text.toString();
+        }
+        if (expression instanceof PsiReferenceExpression reference && reference.resolve() instanceof PsiLocalVariable local
+                && kindOf(local.getType()) == Kind.STRING && depth < MAX_RESOLVE_DEPTH) {
+            String value = localValue(local, reference, depth + 1);
+            if (value != null) {
+                return value;
             }
         }
-
-        // Close all remaining branches
-        updateControlContext(content, activeBranches, new java.util.ArrayList<>());
-
-        if (content.length() == 0) return null;
-        return "Content: <pre><b>" + content.toString() + "</b></pre>";
+        return "${" + expression.getText() + "}";
     }
 
-    private static class ControlBranch {
-        final PsiElement statement; // PsiIfStatement or PsiSwitchStatement or PsiSwitchLabelStatementBase
-        final boolean isElse; // for if
-
-        ControlBranch(PsiElement statement, boolean isElse) {
-            this.statement = statement;
-            this.isElse = isElse;
+    /** Value of a local String before {@code usage}: its initializer and the assignments before it. */
+    private static @Nullable String localValue(PsiLocalVariable local, PsiElement usage, int depth) {
+        PsiElement scope = PsiTreeUtil.getParentOfType(local, PsiCodeBlock.class);
+        if (scope == null) {
+            return null;
         }
-
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
-            ControlBranch that = (ControlBranch) o;
-            return isElse == that.isElse && Objects.equals(statement, that.statement);
+        StringBuilder value = new StringBuilder();
+        boolean known = false;
+        if (local.getInitializer() != null) {
+            value.append(evaluate(local.getInitializer(), depth));
+            known = true;
         }
-
-        @Override
-        public int hashCode() {
-            return Objects.hash(statement, isElse);
+        int usageOffset = usage.getTextRange().getStartOffset();
+        for (PsiAssignmentExpression assignment : PsiTreeUtil.findChildrenOfType(scope, PsiAssignmentExpression.class)) {
+            if (assignment.getTextRange().getEndOffset() > usageOffset
+                    || !(assignment.getLExpression() instanceof PsiReferenceExpression target)
+                    || !target.isReferenceTo(local) || assignment.getRExpression() == null) {
+                continue;
+            }
+            String right = evaluate(assignment.getRExpression(), depth);
+            if (assignment.getOperationTokenType() == JavaTokenType.EQ) {
+                value.setLength(0);
+                value.append(right);
+                known = true;
+            } else if (assignment.getOperationTokenType() == JavaTokenType.PLUSEQ) {
+                value.append(right);
+            }
         }
+        return known ? value.toString() : null;
     }
 
-    private java.util.List<ControlBranch> getParentBranches(PsiElement element, PsiElement scope) {
-        java.util.List<ControlBranch> branches = new java.util.ArrayList<>();
+    /** Control structures between the scope and the element, outermost first. */
+    private static List<Level> path(PsiElement element, PsiElement scope) {
+        List<Level> levels = new ArrayList<>();
         PsiElement current = element;
         while (current != null && current != scope) {
             PsiElement parent = current.getParent();
-            if (parent instanceof PsiIfStatement) {
-                PsiIfStatement ifStmt = (PsiIfStatement) parent;
-                boolean isElse = (ifStmt.getElseBranch() == current);
-                branches.add(0, new ControlBranch(ifStmt, isElse));
-            } else if (parent instanceof PsiSwitchStatement || (parent instanceof PsiCodeBlock && parent.getParent() instanceof PsiSwitchStatement)) {
-                PsiSwitchStatement switchStmt = (parent instanceof PsiSwitchStatement) ? (PsiSwitchStatement) parent : (PsiSwitchStatement) parent.getParent();
-                
-                // Only add the switch branch if we haven't already processed it for the same switchStmt
-                boolean alreadyAdded = false;
-                for (ControlBranch branch : branches) {
-                    if (branch.statement == switchStmt) {
-                        alreadyAdded = true;
-                        break;
+            if (parent instanceof PsiIfStatement statement) {
+                if (current == statement.getThenBranch()) {
+                    String keyword = isElseIf(statement) ? "else if (" : "if (";
+                    levels.add(Level.block(chainRoot(statement), List.of(statement, "then"),
+                            keyword + text(statement.getCondition()) + ")"));
+                } else if (current == statement.getElseBranch() && !(current instanceof PsiIfStatement)) {
+                    levels.add(Level.block(chainRoot(statement), List.of(statement, "else"), "else"));
+                }
+            } else if (parent instanceof PsiSwitchLabeledRuleStatement rule && current == rule.getBody()) {
+                String header = rule.getText().substring(0, current.getStartOffsetInParent()).trim();
+                levels.add(Level.label(rule, header));
+            } else if (parent instanceof PsiCodeBlock block && block.getParent() instanceof PsiSwitchBlock switchBlock) {
+                if (!(current instanceof PsiSwitchLabeledRuleStatement)) {
+                    PsiSwitchLabelStatement label = PsiTreeUtil.getPrevSiblingOfType(current, PsiSwitchLabelStatement.class);
+                    if (label != null) {
+                        levels.add(Level.label(label, label.getText().trim()));
                     }
                 }
-
-                if (!alreadyAdded) {
-                    branches.add(0, new ControlBranch(switchStmt, false));
-
-                    // Also find the case/default label if we are inside one
-                    PsiElement runner = current;
-                    while (runner != null && runner.getParent() != switchStmt.getBody()) {
-                        runner = runner.getParent();
-                    }
-
-                    // Search backwards from runner to find the nearest switch label
-                    PsiElement prev = runner;
-                    while (prev != null) {
-                        if (prev instanceof PsiSwitchLabelStatementBase) {
-                            branches.add(1, new ControlBranch(prev, false));
-                            break;
-                        }
-                        prev = prev.getPrevSibling();
-                    }
-                }
+                levels.add(Level.block(switchBlock, switchBlock, "switch (" + text(switchBlock.getExpression()) + ")"));
+            } else if (parent instanceof PsiLoopStatement loop && !(loop instanceof PsiDoWhileStatement)
+                    && current == loop.getBody()) {
+                String header = loop.getText().substring(0, current.getStartOffsetInParent());
+                levels.add(Level.block(loop, loop, header.replaceAll("\\s+", " ").trim()));
             }
             current = parent;
         }
-        return branches;
+        Collections.reverse(levels);
+        return levels;
     }
 
-    private java.util.List<ControlBranch> updateControlContext(StringBuilder content, java.util.List<ControlBranch> activeBranches, java.util.List<ControlBranch> targetBranches) {
-        int commonPrefix = 0;
-        while (commonPrefix < activeBranches.size() && commonPrefix < targetBranches.size() && activeBranches.get(commonPrefix).equals(targetBranches.get(commonPrefix))) {
-            commonPrefix++;
-        }
-
-        // Close branches
-        for (int i = activeBranches.size() - 1; i >= commonPrefix; i--) {
-            ControlBranch current = activeBranches.get(i);
-            if (current.statement instanceof PsiIfStatement) {
-                boolean isElseIfTransition = false;
-                if (current.isElse && i + 1 < activeBranches.size()) {
-                    ControlBranch next = activeBranches.get(i + 1);
-                    if (next.statement instanceof PsiIfStatement && next.statement.getParent() == current.statement) {
-                        isElseIfTransition = true;
-                    }
-                }
-
-                if (!isElseIfTransition) {
-                    int indent = getIndentLevel(activeBranches, i);
-                    for (int j = 0; j < indent; j++) content.append("\t");
-                    content.append("}\n");
-                }
-            } else if (current.statement instanceof PsiSwitchStatement) {
-                int indent = getIndentLevel(activeBranches, i);
-                for (int j = 0; j < indent; j++) content.append("\t");
-                content.append("}\n");
-            }
-            // PsiSwitchLabelStatementBase doesn't have closing brace
-        }
-
-        // Open new branches
-        boolean skipIndent = false;
-        for (int i = commonPrefix; i < targetBranches.size(); i++) {
-            ControlBranch current = targetBranches.get(i);
-            int indent = getIndentLevel(targetBranches, i);
-
-            if (!skipIndent) {
-                for (int j = 0; j < indent; j++) content.append("\t");
-            }
-            skipIndent = false;
-
-            if (current.statement instanceof PsiIfStatement) {
-                PsiIfStatement ifStmt = (PsiIfStatement) current.statement;
-                boolean isElseIf = false;
-                if (current.isElse && i + 1 < targetBranches.size()) {
-                    ControlBranch next = targetBranches.get(i + 1);
-                    if (next.statement instanceof PsiIfStatement && next.statement.getParent() == ifStmt) {
-                        isElseIf = true;
-                    }
-                }
-
-                if (isElseIf) {
-                    content.append("else ");
-                    skipIndent = true;
-                } else if (current.isElse) {
-                    content.append("else {\n");
-                } else {
-                    PsiExpression condition = ifStmt.getCondition();
-                    String condText = condition != null ? condition.getText().replaceAll("\\s+", " ") : "";
-                    content.append("if(").append(condText).append("){\n");
-                }
-            } else if (current.statement instanceof PsiSwitchStatement) {
-                PsiSwitchStatement switchStmt = (PsiSwitchStatement) current.statement;
-                PsiExpression expression = switchStmt.getExpression();
-                String exprText = expression != null ? expression.getText() : "";
-                content.append("switch(").append(exprText).append("){\n");
-            } else if (current.statement instanceof PsiSwitchLabelStatementBase) {
-                PsiSwitchLabelStatementBase label = (PsiSwitchLabelStatementBase) current.statement;
-                content.append(label.getText().trim()).append("\n");
-            }
-        }
-
-        return targetBranches;
+    private static boolean isElseIf(PsiIfStatement statement) {
+        return statement.getParent() instanceof PsiIfStatement parent && parent.getElseBranch() == statement;
     }
 
-    private int getIndentLevel(java.util.List<ControlBranch> branches, int index) {
-        int indent = 0;
-        for (int i = 0; i < index; i++) {
-            ControlBranch current = branches.get(i);
-            if (current.statement instanceof PsiIfStatement) {
-                boolean isElseIfTransition = false;
-                if (current.isElse && i + 1 < branches.size()) {
-                    ControlBranch next = branches.get(i + 1);
-                    if (next.statement instanceof PsiIfStatement && next.statement.getParent() == current.statement) {
-                        isElseIfTransition = true;
-                    }
-                }
-                if (!isElseIfTransition) {
-                    indent++;
-                }
-            } else if (current.statement instanceof PsiSwitchStatement) {
-                indent++;
-            } else if (current.statement instanceof PsiSwitchLabelStatementBase) {
-                indent++;
-            }
+    private static PsiIfStatement chainRoot(PsiIfStatement statement) {
+        while (isElseIf(statement)) {
+            statement = (PsiIfStatement) statement.getParent();
         }
-        return indent;
+        return statement;
     }
 
-    private void appendIndented(StringBuilder content, int listSize, String text, java.util.List<ControlBranch> branches) {
-        int indentLevel = getIndentLevel(branches, listSize);
-        for (int i = 0; i < indentLevel; i++) {
-            content.append("\t");
-        }
-        content.append(text).append("\n");
-    }
-
-    private boolean isAppendCall(PsiMethodCallExpression methodCall) {
-        PsiReferenceExpression methodExpr = methodCall.getMethodExpression();
-        return "append".equals(methodExpr.getReferenceName());
-    }
-
-    private String evaluateExpression(PsiExpression expression, PsiElement context) {
-        if (expression instanceof PsiLiteralExpression) {
-            Object value = ((PsiLiteralExpression) expression).getValue();
-            if (value != null) {
-                String text = value.toString();
-                if (text.endsWith("()")) {
-                    return text.substring(0, text.length() - 2);
-                }
-                return text;
-            }
-            return "";
-        } else if (expression instanceof PsiPolyadicExpression) {
-            // Handle simple string concatenation like "a" + "b"
-            StringBuilder sb = new StringBuilder();
-            for (PsiExpression operand : ((PsiPolyadicExpression) expression).getOperands()) {
-                sb.append(evaluateExpression(operand, context));
-            }
-            return sb.toString();
-        } else if (expression instanceof PsiReferenceExpression) {
-            PsiElement resolved = ((PsiReferenceExpression) expression).resolve();
-            if (resolved instanceof PsiVariable) {
-                PsiVariable variable = (PsiVariable) resolved;
-                return resolveVariableValue(variable, context);
-            }
-        } else if (expression instanceof PsiMethodCallExpression) {
-            PsiMethodCallExpression methodCall = (PsiMethodCallExpression) expression;
-            return " ${" + methodCall.getMethodExpression().getReferenceName() + "}()";
-        }
-        return "";
-    }
-
-    private String resolveVariableValue(PsiVariable variable, PsiElement context) {
-        PsiElement scope = PsiTreeUtil.getParentOfType(variable, PsiCodeBlock.class);
-        if (scope == null) return " ${" + variable.getName() + "}";
-
-        StringBuilder value = new StringBuilder();
-        PsiExpression initializer = variable.getInitializer();
-        if (initializer != null) {
-            value.append(evaluateExpression(initializer, initializer));
-        }
-
-        Collection<PsiAssignmentExpression> assignments = PsiTreeUtil.findChildrenOfType(scope, PsiAssignmentExpression.class);
-        for (PsiAssignmentExpression assignment : assignments) {
-            // Check if assignment happens before the context
-            if (assignment.getTextRange().getEndOffset() <= context.getTextRange().getStartOffset()) {
-                PsiExpression lExpr = assignment.getLExpression();
-                if (lExpr instanceof PsiReferenceExpression && ((PsiReferenceExpression) lExpr).isReferenceTo(variable)) {
-                    PsiExpression rExpr = assignment.getRExpression();
-                    if (rExpr != null) {
-                        String rValue = evaluateExpression(rExpr, assignment);
-                        if (assignment.getOperationTokenType() == JavaTokenType.EQ) {
-                            value.setLength(0);
-                            value.append(rValue);
-                        } else if (assignment.getOperationTokenType() == JavaTokenType.PLUSEQ) {
-                            value.append(rValue);
-                        }
-                    }
-                }
-            }
-        }
-
-        if (value.length() == 0) {
-            return " ${" + variable.getName() + "}";
-        }
-        return value.toString();
+    private static String text(@Nullable PsiElement element) {
+        return element == null ? "" : element.getText().replaceAll("\\s+", " ");
     }
 }
