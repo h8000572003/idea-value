@@ -1,117 +1,37 @@
 package com.h8000572003.values;
 
-import com.intellij.codeInsight.intention.PsiElementBaseIntentionAction;
-import com.intellij.codeInspection.util.IntentionFamilyName;
-import com.intellij.codeInspection.util.IntentionName;
-import com.intellij.openapi.editor.Document;
-import com.intellij.openapi.editor.Editor;
-import com.intellij.openapi.project.Project;
-import com.intellij.psi.*;
-import com.intellij.psi.codeStyle.CodeStyleManager;
-import com.intellij.psi.util.PsiTreeUtil;
-import com.intellij.psi.util.PsiTypesUtil;
-import com.intellij.util.IncorrectOperationException;
-import org.apache.commons.lang3.StringUtils;
+import com.h8000572003.values.codegen.CodeGenerators;
+import com.intellij.psi.PsiClass;
+import com.intellij.psi.PsiMethod;
+import com.intellij.psi.PsiParameter;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.LinkedHashSet;
-import java.util.Objects;
-import java.util.Set;
+import java.util.List;
 
-public class GenerateSourceMapperAction extends PsiElementBaseIntentionAction {
+/**
+ * {@code target.setX(source.getX());} for {@code void map(Target target, Source source)}.
+ */
+public class GenerateSourceMapperAction extends CaretStatementsIntention {
 
     public static final String TITLE = "Generated set/get based on parameter 1 as parameter 2";
-    private SmartPsiElementPointer<PsiParameterList> parameterListPointer;
-    private SmartPsiElementPointer<PsiClass> psiClass1Pointer;
 
-
-
-    @Override
-    public void invoke(@NotNull Project project, Editor editor, @NotNull PsiElement element) throws IncorrectOperationException {
-        PsiClass psiClass1 = psiClass1Pointer.getElement();
-        if (psiClass1 == null) return;
-        final Set<String> get1 = getMethods1(Contract.START_GET_OR_IS, psiClass1);
-
-        StringBuilder insertText = new StringBuilder(StringUtils.EMPTY);
-        PsiParameterList parameterList = parameterListPointer.getElement();
-        if (parameterList == null) return;
-        String name = Objects.requireNonNull(parameterList.getParameter(0)).getName();
-        String name1 = Objects.requireNonNull(parameterList.getParameter(1)).getName();
-        for (String method : get1) {
-            insertText.append("%s.%s(%s.%s());\n".formatted(
-                    name,
-                    method.replaceFirst("get", "set").replaceFirst("is", "set"),
-                    name1,
-                    method
-            ));
-        }
-        int offset = editor.getCaretModel().getOffset();
-        Document document = editor.getDocument();
-        document.insertString(editor.getCaretModel().getOffset(), insertText.toString());
-
-
-        PsiDocumentManager.getInstance(project).commitDocument(document);
-        PsiFile psiFile = PsiDocumentManager.getInstance(project).getPsiFile(document);
-        if (psiFile != null) {
-            CodeStyleManager.getInstance(project).reformatText(psiFile, offset, offset + insertText.length());
-        }
-        psiClass1Pointer = null;
-        parameterListPointer = null;
-    }
-
-    private static Set<String> getMethods1(String startWith, PsiClass psiClass) {
-        Set<String> methodNames = new LinkedHashSet<>();
-        for (PsiMethod method : psiClass.getMethods()) {
-            if (method.hasModifierProperty(PsiModifier.PUBLIC) &&
-                    !method.hasModifierProperty(PsiModifier.STATIC) &&
-                    method.getName().matches(startWith)) {
-                methodNames.add(method.getName());
-            }
-        }
-        return methodNames;
-    }
-
-
-    @Override
-    public boolean isAvailable(@NotNull Project project, Editor editor, @NotNull PsiElement element) {
-        if (element instanceof PsiWhiteSpace) {
-            PsiMethod psiMethod = PsiTreeUtil.getParentOfType(element, PsiMethod.class);
-            if (psiMethod == null) {
-                return false;
-            }
-            PsiParameterList parameterList = psiMethod.getParameterList();
-            this.parameterListPointer = SmartPointerManager.getInstance(project).createSmartPsiElementPointer(parameterList);
-            if (parameterList.getParametersCount() == 2) {
-                PsiClass psiClass1 = getClassTypeFromParameter(0, parameterList);
-                if (psiClass1 != null) {
-                    this.psiClass1Pointer = SmartPointerManager.getInstance(project).createSmartPsiElementPointer(psiClass1);
-                }
-                return psiClass1 != null;
-            }
-        }
-
-        return false;
-    }
-
-
-    private PsiClass getClassTypeFromParameter(int index, PsiParameterList parameterList) {
-        PsiParameter parameter1 = parameterList.getParameter(index);
-        if (parameter1 != null) {
-            return PsiTypesUtil.getPsiClass(parameter1.getType());
-        }
-        return null;
-    }
-
-
-    @Override
-    public @IntentionName @NotNull String getText() {
-        return TITLE;
+    public GenerateSourceMapperAction() {
+        super(TITLE);
     }
 
     @Override
-    public @NotNull @IntentionFamilyName String getFamilyName() {
-        return "";
+    protected List<String> statements(@NotNull PsiMethod method) {
+        PsiParameter[] parameters = method.getParameterList().getParameters();
+        if (parameters.length != 2) {
+            return List.of();
+        }
+        PsiClass target = PsiAccessors.classOf(parameters[0].getType());
+        PsiClass source = PsiAccessors.classOf(parameters[1].getType());
+        if (target == null || source == null) {
+            return List.of();
+        }
+        return CodeGenerators.copyProperties(
+                parameters[0].getName(), PsiAccessors.names(PsiAccessors.setters(target)),
+                parameters[1].getName(), PsiAccessors.names(PsiAccessors.getters(source)));
     }
-
-
 }

@@ -1,11 +1,10 @@
 package com.h8000572003.values;
 
-import com.h8000572003.values.commons.NotKeepValueStrategy;
+import com.h8000572003.values.codegen.NumberSequences;
 
 public class GenerateAllSetterNoCacheNameAction extends BaseGenerateAllSetterFieldNameAction {
 
     GenerateAllSetterNoCacheNameAction() {
-        super(new NotKeepValueStrategy(), "Generate all setters no cache values");
-
+        super(NumberSequences.sequential(), "Generate all setters no cache values");
     }
 }

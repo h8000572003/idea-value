@@ -1,18 +1,15 @@
 package com.h8000572003.values.configurable;
 
-import com.intellij.openapi.application.ApplicationManager; // 新增
+import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.components.PersistentStateComponent;
 import com.intellij.openapi.components.State;
 import com.intellij.openapi.components.Storage;
-import org.apache.commons.lang3.StringUtils;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 @State(
         name = "MyPluginSettings",
         storages = {@Storage("MyPluginSettings.xml")}
 )
-// 建議加上 final
 public final class MyPluginSettings implements PersistentStateComponent<MyPluginSettings.State> {
 
     private State myState = new State();
@@ -21,9 +18,8 @@ public final class MyPluginSettings implements PersistentStateComponent<MyPlugin
         return ApplicationManager.getApplication().getService(MyPluginSettings.class);
     }
 
-    @Nullable
     @Override
-    public State getState() {
+    public @NotNull State getState() {
         return myState;
     }
 
@@ -33,15 +29,22 @@ public final class MyPluginSettings implements PersistentStateComponent<MyPlugin
     }
 
     public static class State {
+        static final String DEFAULT_PARAMETER_NAME = "parameters";
+
         private ParameterType featureEnabled = ParameterType.USE_NAMED;
         private String parameterName = "";
+
+        /** The parameter collection name used for the given input: blank means the default. */
+        public static String effectiveName(String parameterName) {
+            return parameterName == null || parameterName.isBlank() ? DEFAULT_PARAMETER_NAME : parameterName.strip();
+        }
 
         public ParameterType getFeatureEnabled() {
             return featureEnabled;
         }
 
         public String getParameterName() {
-            return StringUtils.defaultIfEmpty(parameterName, "parameters");
+            return effectiveName(parameterName);
         }
 
         public void setParameterName(String parameterName) {

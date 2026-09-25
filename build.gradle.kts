@@ -24,7 +24,6 @@ dependencies {
     }
 
     implementation(project(":core"))
-    implementation("org.apache.commons:commons-lang3:3.18.0")
 
     testImplementation("junit:junit:4.13.2")
     testImplementation("org.opentest4j:opentest4j:1.3.0")
