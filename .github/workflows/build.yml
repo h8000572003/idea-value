@@ -25,4 +25,4 @@ jobs:
           name: test-reports
           path: |
             build/reports/tests
-            sql-core/build/reports/tests
+            core/build/reports/tests

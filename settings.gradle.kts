@@ -7,4 +7,4 @@ pluginManagement {
 
 rootProject.name = "values"
 
-include("sql-core")
+include("core")

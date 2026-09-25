@@ -20,9 +20,10 @@ dependencies {
         intellijIdeaCommunity(providers.gradleProperty("platformVersion"))
         bundledPlugin("com.intellij.java")
         testFramework(TestFrameworkType.Platform)
+        testFramework(TestFrameworkType.Plugin.Java)
     }
 
-    implementation(project(":sql-core"))
+    implementation(project(":core"))
     implementation("org.apache.commons:commons-lang3:3.18.0")
 
     testImplementation("junit:junit:4.13.2")
@@ -50,5 +51,12 @@ intellijPlatform {
 
     publishing {
         token = providers.environmentVariable("PUBLISH_TOKEN")
+    }
+}
+
+tasks.test {
+    testLogging {
+        events("passed", "skipped", "failed")
+        exceptionFormat = org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL
     }
 }

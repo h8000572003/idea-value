@@ -1,4 +1,4 @@
-// Pure Java SQL rewriting logic, kept free of IntelliJ APIs so it can be unit tested quickly.
+// Pure Java code generation logic, kept free of IntelliJ APIs so it can be unit tested quickly.
 plugins {
     id("java-library")
 }
@@ -20,4 +20,8 @@ dependencies {
 
 tasks.test {
     useJUnitPlatform()
+    testLogging {
+        events("passed", "skipped", "failed")
+        exceptionFormat = org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL
+    }
 }
