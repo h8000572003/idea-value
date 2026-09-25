@@ -5,7 +5,7 @@ on:
   push:
 
 jobs:
-  test:
+  build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
@@ -16,8 +16,14 @@ jobs:
           java-version: '21'
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v5
-      - name: Run tests
+      - name: Test and build plugin
         run: ./gradlew test buildPlugin
+      - name: Upload plugin zip
+        uses: actions/upload-artifact@v5
+        with:
+          name: plugin-zip
+          path: build/distributions/*.zip
+          if-no-files-found: error
       - name: Upload test reports
         if: failure()
         uses: actions/upload-artifact@v5

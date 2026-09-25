@@ -62,6 +62,11 @@
            <strong>1.10.0</strong>
         <ul>
             <li>[FIX]rewrite sql injection fix: correct quote handling, LIKE, method calls, constants and accumulated sql; insert parameter code instead of copying to clipboard; reject identifiers and IN lists</li>
+            <li>[FIX]setters: only real setters incl. inherited, typed sample values; preview no longer changes numbers</li>
+            <li>[FIX]mappers and assertions only use matching public getters/setters; return-value mapper names the variable after its type</li>
+            <li>[FIX]fields from getters: no duplicate fields, generic types kept</li>
+            <li>[FIX]null check: offered only on a variable qualifier in the if condition, keeps operator precedence</li>
+            <li>[FIX]String/StringBuilder documentation: one line per append, resolves constants and local values, HTML escaped</li>
         </ul>
     ]]>
     </change-notes>

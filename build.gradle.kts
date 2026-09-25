@@ -6,7 +6,7 @@ plugins {
 }
 
 group = "com.h8000572003.values"
-version = "1.10.0"
+version = providers.gradleProperty("pluginVersion").get()
 
 repositories {
     mavenCentral()
@@ -50,6 +50,16 @@ intellijPlatform {
 
     publishing {
         token = providers.environmentVariable("PUBLISH_TOKEN")
+        // 1.2.0 -> default channel, 1.2.0-beta.1 -> "beta" channel
+        channels = providers.gradleProperty("pluginVersion").map { version ->
+            listOf(version.substringAfter('-', "").substringBefore('.').ifEmpty { "default" })
+        }
+    }
+
+    pluginVerification {
+        ides {
+            recommended()
+        }
     }
 }
 
