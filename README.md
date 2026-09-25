@@ -21,6 +21,10 @@
 - Add 'value != null' check：游標在 if 條件中 `value.method()` 的 `value` 上，於條件前加上 `value != null &&`
 - String / StringBuilder 快速文件（Ctrl+Q）：顯示變數累加的內容，保留 if / else / switch / 迴圈結構
 
+## 使用手冊
+
+圖文操作說明（前後程式對照、安裝與設定）：[docs/index.html](docs/index.html)，啟用 GitHub Pages 後可於 https://h8000572003.github.io/idea-value/ 瀏覽。
+
 ## 開發與發佈
 
 - 開發指令與架構：見 `CLAUDE.md`

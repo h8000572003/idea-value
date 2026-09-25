@@ -75,3 +75,9 @@ openssl req -key private.pem -new -x509 -days 365 -out chain.crt
 | `Secret PUBLISH_TOKEN is not set` 或權杖失效 | 重新產生權杖並更新 secret，於失敗的 run 點 **Re-run jobs** |
 | Marketplace 回應版本已存在 | 同一版本號不能重複上傳，提高 `pluginVersion` 重新發佈 |
 | Marketplace 審核退回 | 依審核意見修正，提高版本號重新發佈 |
+
+## 使用手冊網頁（GitHub Pages）
+
+`docs/index.html` 是外掛的展示與操作說明頁。一次性設定：repo **Settings → Pages → Build and deployment**，Source 選 **Deploy from a branch**，Branch 選 `main`、資料夾 `/docs`。之後每次合併到 `main` 會自動更新 https://h8000572003.github.io/idea-value/ 。
+
+功能有變動時，請一併更新手冊中的操作說明與前後對照。
